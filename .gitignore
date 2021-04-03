@@ -1,0 +1,8 @@
+
+# dir
+.idea/
+cmake-build-debug/
+
+# filetype
+*.exe
+
