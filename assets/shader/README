@@ -1,0 +1,17 @@
+
+shader 的规范：
+
+location 变量的位置：
+    0 position
+    1 normal
+    2 texcoord
+
+uniform 变量的名称：
+    矩阵：
+        model, view, projection
+
+
+必须要有这些要素：
+model, view, projection
+
+pos, normal, uv
