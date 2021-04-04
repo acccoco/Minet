@@ -1,6 +1,6 @@
 #include "../camera.h"
 
-glm::vec3 Camera::eye;
+glm::vec3 Camera::pos;
 glm::vec3 Camera::front;
 glm::mat4 Camera::projection;
 float Camera::yaw;
@@ -10,18 +10,18 @@ glm::mat4 Camera::view_matrix() {
     front.x = -cos(glm::radians(pitch)) * sin(glm::radians(yaw));
     front.y = sin(glm::radians(pitch));
     front.z = -cos(glm::radians(pitch)) * cos(glm::radians(yaw));
-    return glm::lookAt(eye, eye + glm::normalize(front), UP);
+    return glm::lookAt(pos, pos + glm::normalize(front), UP);
 }
 
-glm::vec3 Camera::get_eye() {
-    return Camera::eye;
+glm::vec3 Camera::pos_get() {
+    return Camera::pos;
 }
 
 glm::vec3 Camera::get_front() {
     return Camera::front;
 }
 
-glm::mat4 Camera::projection_matrix() {
+glm::mat4 Camera::proj_matrix_get() {
     return projection;
 }
 
@@ -36,11 +36,11 @@ void Camera::camera_rotate_callback(double delta_x, double delta_y) {
 }
 
 void Camera::init() {
-    LOG(INFO) << "global camera init.";
+    SPDLOG_INFO("global camera init.");
 
     yaw = 0;
     pitch = 0;
-    eye = glm::vec3(0.f, 0.f, 0.f);
+    pos = glm::vec3(0.f, 0.f, 0.f);
     front = glm::vec3(0.f, 0.f, -1.f);
 
     projection = glm::perspective(glm::radians(45.0f), 4 / (float) 3, 0.1f, 100.0f);
@@ -49,17 +49,17 @@ void Camera::init() {
 void Camera::camera_move_loop(GLFWwindow *window) {
     // 前后左右
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        Camera::eye += CAMERA_MOVE_SPEED * Camera::front;
+        Camera::pos += CAMERA_MOVE_SPEED * Camera::front;
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        Camera::eye -= CAMERA_MOVE_SPEED * Camera::front;
+        Camera::pos -= CAMERA_MOVE_SPEED * Camera::front;
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        Camera::eye -= glm::normalize(glm::cross(Camera::front, UP)) * CAMERA_MOVE_SPEED;
+        Camera::pos -= glm::normalize(glm::cross(Camera::front, UP)) * CAMERA_MOVE_SPEED;
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        Camera::eye += glm::normalize(glm::cross(Camera::front, UP)) * CAMERA_MOVE_SPEED;
+        Camera::pos += glm::normalize(glm::cross(Camera::front, UP)) * CAMERA_MOVE_SPEED;
 
     // 上下
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-        Camera::eye += CAMERA_MOVE_SPEED * UP;
+        Camera::pos += CAMERA_MOVE_SPEED * UP;
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-        Camera::eye -= CAMERA_MOVE_SPEED * UP;
+        Camera::pos -= CAMERA_MOVE_SPEED * UP;
 }

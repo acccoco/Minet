@@ -9,60 +9,47 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
-#include <easylogging++.h>
+#include <spdlog/spdlog.h>
 
 #include "./shader.h"
 #include "./mesh.h"
-#include "./texture_builder.h"
-#include "./mesh_builder.h"
 
 
+/* 一个 Model 由多个 Mesh 组成 */
 class Model {
 public:
     friend class ModelBuilder;
 
     Model() = default;
+    Model(const glm::vec3 &pos);
 
-    void draw() {
-        for (auto &mesh : this->meshes) {
-            mesh.draw();
-        }
-    }
+    glm::mat4 model_matrix_get();
+
+    // 改变位姿
+    void move(const glm::vec3 &trans);
+    void rotate(const glm::vec3 &axis, float angle);
+
+    /**
+     * 绘制 model
+     * 会更新 model 矩阵，设置 texture 等
+     */
+    void draw(const std::shared_ptr<Shader> &shader);
 
 protected:
     std::vector<Mesh> meshes;
-
+    glm::mat4 model = glm::one<glm::mat4>();            // model 矩阵
+    glm::vec3 pos;                          // Model 的位置
 };
 
 
-class Model2 {
-protected:
-    std::shared_ptr<Shader> shader;
-    std::shared_ptr<VAO> mesh;
-    glm::mat4 model = glm::one<glm::mat4>();        // 模型矩阵
-
+/* 通过 Assimp 来创建一个 Model 对象 */
+class ModelBuilder {
 public:
+    static std::shared_ptr<Model> build(const std::string &path);
 
-    Model2() = default;
-
-    virtual void update() = 0;
-
-    std::shared_ptr<Shader> get_shader();
-
-    void update_model_matrix(const glm::vec3 &pos, float angle, const glm::vec3 &axis);
-
-    void translate(const glm::vec3 &move);
-
-    virtual void draw() final;
-
-    glm::mat4 get_model_matrix();
-
-    void bind_shader(const std::shared_ptr<Shader> &shader_);
-
-    /**
-     * 为模型绑定 mesh
-     */
-    void bind_mesh(const std::shared_ptr<VAO> &mesh_);
+private:
+    static void process_node(Model &model, const aiNode &node, const aiScene &scene, const std::string &dir);
 };
+
 
 #endif //RENDER_MODEL_H

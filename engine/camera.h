@@ -25,7 +25,7 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <easylogging++.h>
+#include <spdlog/spdlog.h>
 #include <GLFW/glfw3.h>
 
 
@@ -39,17 +39,8 @@ const glm::vec3 UP = glm::vec3(0.f, 1.f, 0.f);
 
 // 类型定义
 // ============================================================================
-
+// todo 重构摄像机
 class Camera {
-protected:
-    static glm::vec3 eye;
-    static glm::vec3 front;     // 通过欧拉角计算得到
-
-    static float yaw;           // 偏航
-    static float pitch;         // 俯仰
-
-    static glm::mat4 projection;
-
 public:
     Camera() = default;
 
@@ -58,14 +49,14 @@ public:
      */
     static glm::mat4 view_matrix();
 
-    static glm::vec3 get_eye();
+    static glm::vec3 pos_get();
 
     static glm::vec3 get_front();
 
     /**
      * 根据摄像机的参数，获得 projection matrix
      */
-    static glm::mat4 projection_matrix();
+    static glm::mat4 proj_matrix_get();
 
     /**
      * 窗口的回调，检查鼠标位置
@@ -76,6 +67,15 @@ public:
 
     // 每次渲染循环中调用，检查键盘是否按下
     static void camera_move_loop(GLFWwindow *window);
+
+protected:
+    static glm::vec3 pos;       // (world) 摄像机的位置
+    static glm::vec3 front;     // (world) 摄像机的朝向
+
+    static float yaw;           // 姿态：偏航角
+    static float pitch;         // 姿态：俯仰角
+
+    static glm::mat4 projection;    // 投影矩阵，只读的
 };
 
 

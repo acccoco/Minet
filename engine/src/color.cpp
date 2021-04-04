@@ -1,5 +1,5 @@
 
-#include "../color_const.h"
+#include "../color.h"
 
 glm::vec3 Color::white(1.f,1.f,1.f);
 glm::vec3 Color::black(0.f, 0.f, 0.f);

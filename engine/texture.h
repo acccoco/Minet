@@ -1,90 +1,72 @@
-/**
- * 材质对象
- */
-
 #ifndef RENDER_ENGINE_TEXTURE_H
 #define RENDER_ENGINE_TEXTURE_H
 
+#include <map>
 #include <string>
 #include <exception>
 #include <utility>
 
 #include <glad/glad.h>
 #include <stb_image.h>
-#include <easylogging++.h>
+#include <assimp/scene.h>
+#include <spdlog/spdlog.h>
 
 #include "../config.hpp"
 
+
+enum TextureType {
+    diffuse,
+    specular,
+    normal,
+};
+
+
 class Texture2D {
 public:
-    unsigned int id = 0;
-    std::string type;
+    friend class TextureManager;
 
+    unsigned int id = 0;
     Texture2D() = default;
 
-    explicit Texture2D(std::string path, std::string type)
-            : type(std::move(type)), path(std::move(path)) {
-        this->set_up();
-    }
+explicit Texture2D(std::string path);
 
 private:
-
     std::string path;
     int width = 0;
     int height = 0;
     int nr_channels = 0;
 
-    void set_up() {
-        // 加载图片
-        unsigned char *data = this->load_file(this->path);
-
-        // 输送到 GPU
-        this->id = Texture2D::regist_texture(data, width, height);
-
-        // 释放内存
-        stbi_image_free(data);
-    }
+    /* 从文件中取得数据，传送到 GPU 中 */
+    void init();
 
     // 将材质输送到 gpu
-    static unsigned int regist_texture(unsigned char *data, int width, int height) {
-        glUseProgram(0);        // 任何着色器都不会受影响
-
-        unsigned int texture;
-        glGenTextures(1, &texture);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture);
-
-        // uv坐标超出范围后如何采样：重复
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-        // 材质放大和缩小时，应该如何采样
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        // 将纹理发送到显存
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-
-        // 生成多级渐远纹理
-        glGenerateMipmap(GL_TEXTURE_2D);
-
-        // 解绑
-        glBindTexture(GL_TEXTURE_2D, 0);
-
-        return texture;
-    }
+    static unsigned int regist_texture(unsigned char *data, int width, int height, int nr_channels);
 
     // 加载图片
-    unsigned char *load_file(std::string &file_path) {
-        LOG(INFO) << "load texture from file: " << file_path;
-        unsigned char *data = stbi_load(file_path.c_str(), &this->width, &this->height, &this->nr_channels, 0);
-        if (!data) {
-            LOG(ERROR) << "fail to load texture from file: " << file_path;
-            throw (std::exception());
-        }
-        return data;
-    }
+    unsigned char *load_file(std::string &file_path);
+};
 
+
+/* 多个 mesh 使用同一个 texture，这个类可以缓存 */
+class TextureManager {
+public:
+    static std::shared_ptr<Texture2D> texture_load(const std::string &path);
+
+private:
+    static std::map<std::string, std::shared_ptr<Texture2D>> textures;
+};
+
+
+
+class Texture2DBuilder {
+public:
+    /* 去除 mesh 中的所有纹理，并构建 Texture 对象 */
+    static std::map<TextureType, std::vector<std::shared_ptr<Texture2D>>>
+    build(const std::string &dir, const aiMesh &mesh, const aiScene &scene);
+private:
+    /* 获得 mesh 中特定类型的所有 texture */
+    static std::vector<std::shared_ptr<Texture2D>>
+    build(const std::string &dir, const aiMaterial &mat, aiTextureType type);
 };
 
 #endif //RENDER_TEXTURE_H

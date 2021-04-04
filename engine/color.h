@@ -1,12 +1,15 @@
-/**
- * 颜色常量
- */
-
-#ifndef RENDER_COLOR_CONST_H
-#define RENDER_COLOR_CONST_H
+#ifndef RENDER_COLOR_H
+#define RENDER_COLOR_H
 
 #include <glm/glm.hpp>
 
+
+typedef glm::vec3 ColorT;
+
+
+/**
+ * 颜色常量
+ */
 class Color {
 public:
     static glm::vec3 white;
@@ -20,4 +23,4 @@ public:
     static glm::vec3 gray41;
 };
 
-#endif //RENDER_COLOR_CONST_H
+#endif //RENDER_COLOR_H

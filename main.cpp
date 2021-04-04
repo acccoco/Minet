@@ -6,14 +6,13 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-#include "./engine/init.h"
+#include "./engine/core.h"
 #include "./engine/scene.h"
 
-#include "./scene/scene.h"
+#include "./scene/myscene.h"
+#include "./scene/scene2.h"
+#include "./scene/scene_nano.h"
 
-
-// 初始化日志模块
-INITIALIZE_EASYLOGGINGPP
 
 const unsigned int WINDOW_WIDTH = 1600;
 const unsigned int WINDOW_HEIGHT = 1200;
@@ -37,7 +36,7 @@ int main() {
     scene.init();
 
     /* 渲染循环 */
-    LOG(INFO) << "start loop";
+    SPDLOG_INFO("start loop");
     while (!glfwWindowShouldClose(window)) {
         // 处理键盘事件
         process_esc(window);
@@ -51,7 +50,6 @@ int main() {
 
         // 场景绘制
         scene.update();
-        scene.draw();
 
         // 交换双缓冲
         glfwSwapBuffers(window);
@@ -60,7 +58,3 @@ int main() {
 
     glfwTerminate();
 }
-
-
-
-

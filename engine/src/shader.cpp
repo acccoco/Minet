@@ -4,13 +4,23 @@
 #include <cassert>
 #include <exception>
 
-#include <easylogging++.h>
 
 #include "../utils/file.h"
 
 
 // 全局变量 =======================================================================
 const int LOG_INFO_LEN = 512;
+
+
+
+const GLuint ELocation::position = 0;
+const GLuint ELocation::normal = 1;
+const GLuint ELocation::texcoord = 2;
+
+
+const std::string EMatrix::model = "model";
+const std::string EMatrix::view = "view";
+const std::string EMatrix::projection = "projection";
 
 
 // 类方法实现 ======================================================================
@@ -21,7 +31,7 @@ GLint Shader::unifrom_location_get(const std::string &name) {
     if (iter == uniform_location_map.end()) {
         int location = glGetUniformLocation(this->id, name.c_str());
         if (location == -1) {
-            LOG(ERROR) << "fail to find shader uniform: " << name;
+            SPDLOG_ERROR("fail to find shader uniform: {}", name);
             throw (std::exception());
         }
         uniform_location_map.insert({name, location});
@@ -38,7 +48,7 @@ GLuint Shader::shader_prog_get(const std::string &vert_shader_file, const std::s
     unsigned int fragment_shader = Shader::shader_compile(frag_shader_file, GL_FRAGMENT_SHADER);
 
     // 链接着色器
-    LOG(INFO) << "link shader";
+    SPDLOG_INFO("link shader");
     unsigned int shader_program = glCreateProgram();
     glAttachShader(shader_program, vertex_shader);
     glAttachShader(shader_program, fragment_shader);
@@ -54,7 +64,7 @@ GLuint Shader::shader_prog_get(const std::string &vert_shader_file, const std::s
     glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
     if (!success) {
         glGetProgramInfoLog(shader_program, LOG_INFO_LEN, nullptr, log_info);
-        LOG(ERROR) << "link shader fail, info log: " << log_info;
+        SPDLOG_ERROR("link shader fail, info log: {}", log_info);
         throw std::exception();
     }
 
@@ -74,7 +84,7 @@ GLuint Shader::shader_compile(const std::string &file_name, GLenum shader_type) 
     const char *source = shader_source.c_str();
 
     // 编译
-    LOG(INFO) << "compile shader";
+    SPDLOG_INFO("compile shader");
     unsigned int shader = glCreateShader(shader_type);
     glShaderSource(shader, 1, &source, nullptr);
     glCompileShader(shader);
@@ -85,7 +95,7 @@ GLuint Shader::shader_compile(const std::string &file_name, GLenum shader_type) 
     glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
     if (!success) {
         glGetShaderInfoLog(shader, LOG_INFO_LEN, nullptr, log_info);
-        LOG(ERROR) << "fail to compile shader, info log:\n" << log_info;
+        SPDLOG_ERROR("fail to compile shader, info log\n {}", log_info);
         throw std::exception();
     }
 
@@ -96,36 +106,72 @@ void Shader::use() const {
     glUseProgram(this->id);
 }
 
-void Shader::unuse() {
-    glUseProgram(0);
-}
-
 void Shader::uniform_vec4_set(const std::string &name, const glm::vec4 &v) {
     glUseProgram(this->id);
     glUniform4f(unifrom_location_get(name), v.x, v.y, v.z, v.w);
-    Shader::unuse();
 }
 
 void Shader::uniform_float_set(const std::string &name, float value) {
     glUseProgram(this->id);
     glUniform1f(unifrom_location_get(name), value);
-    Shader::unuse();
 }
 
 void Shader::uniform_vec3_set(const std::string &name, const glm::vec3 &v) {
     glUseProgram(this->id);
     glUniform3f(unifrom_location_get(name), v.x, v.y, v.z);
-    Shader::unuse();
 }
 
 void Shader::uniform_mat4_set(const std::string &name, const glm::mat4 &m) {
     glUseProgram(this->id);
     glUniformMatrix4fv(unifrom_location_get(name), 1, GL_FALSE, glm::value_ptr(m));
-    Shader::unuse();
 }
 
 void Shader::uniform_tex2d_set(const std::string &name, GLuint texture_unit) {
     glUseProgram(this->id);
     glUniform1f(unifrom_location_get(name), texture_unit);
-    Shader::unuse();
+}
+
+void ShaderExtLight::set(Shader &shader, const SpotLight &light, const std::string &name) {
+    shader.uniform_vec3_set(name + ".position", light.position);
+    shader.uniform_vec3_set(name + ".direction", light.direction);
+
+    set_light(shader, light, name);
+
+    set_attenuation(shader, light.attenuation, name);
+
+    // 设置切光角
+    shader.uniform_float_set(name + ".inner_cutoff", light.inner_cutoff);
+    shader.uniform_float_set(name + ".outer_cutoff", light.outer_cutoff);
+}
+
+void ShaderExtLight::set(Shader &shader, const DirLight &light, const std::string &name) {
+    shader.uniform_vec3_set(name + ".direction", light.direction);
+
+    set_light(shader, light, name);
+}
+
+void ShaderExtLight::set(Shader &shader, const PointLight &light, const std::string &name) {
+    shader.uniform_vec3_set(name + ".position", light.position);
+
+    set_attenuation(shader, light.attenuation, name);
+
+    set_light(shader, light, name);
+}
+
+void ShaderExtLight::set_attenuation(Shader &shader, const AttenuationDistance &attenuation, const std::string &name) {
+    shader.uniform_float_set(name + ".constant", attenuation.constant);
+    shader.uniform_float_set(name + ".linear", attenuation.linear);
+    shader.uniform_float_set(name + ".quadratic", attenuation.quadratic);
+}
+
+void ShaderExtLight::set_light(Shader &shader, const Light &light, const std::string &name) {
+    shader.uniform_vec3_set(name + ".color.ambient", light.ambient);
+    shader.uniform_vec3_set(name + ".color.diffuse", light.diffuse);
+    shader.uniform_vec3_set(name + ".color.specular", light.specular);
+}
+
+void ShaderExtMVP::set(Shader &shader, const glm::mat4 &model, const glm::mat4 &view, const glm::mat4 &proj) {
+    shader.uniform_mat4_set("model", model);
+    shader.uniform_mat4_set("view", view);
+    shader.uniform_mat4_set("projection", proj);
 }

@@ -2,9 +2,9 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <easylogging++.h>
+#include <spdlog/spdlog.h>
 
-#include "../init.h"
+#include "../core.h"
 #include "../camera.h"
 
 // 全局对象 =======================================================================
@@ -16,16 +16,16 @@ static double g_ypos_last;
 // 函数实现 =======================================================================
 
 void init_glad() {
-    LOG(INFO) << "init glad";
+    SPDLOG_INFO("init glad");
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
-        LOG(ERROR) << "fail to init glad";
+        SPDLOG_ERROR("fail to init glad");
         exit(-1);
     }
 }
 
 
 void init_glfw() {
-    LOG(INFO) << "init glfw";
+    SPDLOG_INFO("init glfw");
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -34,14 +34,21 @@ void init_glfw() {
 
 
 void init_log() {
-    LOG(INFO) << "log init.";
-    el::Configurations conf;
-    conf.setToDefault();
-    const char * format = "[%datetime{%H:%m:%s}][%levshort][%file::%line] %msg";
-    conf.set(el::Level::Debug, el::ConfigurationType::Format, format);
-    conf.set(el::Level::Info, el::ConfigurationType::Format, format);
-    conf.set(el::Level::Error, el::ConfigurationType::Format, format);
-    el::Loggers::reconfigureAllLoggers(conf);
+    spdlog::set_level(spdlog::level::debug);
+
+    /**
+     * %L 日志级别，缩写
+     * %t 线程
+     *
+     * 以下选项必须要用 SPDLOG_INFO 才能生效
+     * %s 文件的 basename
+     * %# 行号
+     * %! 函数名
+     *
+     * 格式控制：
+     * %-4!<flag> 表示左对齐，4位，超出截断
+     */
+    spdlog::set_pattern("[%H:%M:%S][%^%L%$][%15!s:%-3!#][%!] %v");
 }
 
 
@@ -87,20 +94,20 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
 GLFWwindow* init_window(int width, int height) {
     assert(width > 0 && height > 0);
 
-    LOG(INFO) << "create window(" << width << ", " << height << ")";
+    SPDLOG_INFO("create window ({:d}, {:d})", width, height);
     GLFWwindow* window = glfwCreateWindow(width, height, "LearnOpenGL", nullptr, nullptr);
     if (window == nullptr) {
-        LOG(ERROR) << "create window(" << width << ", " << height << ") fail";
+        SPDLOG_ERROR("fail to create window");
         glfwTerminate();
         exit(-1);
     }
 
     glfwMakeContextCurrent(window);
-    LOG(INFO) << "set context to window";
+    SPDLOG_INFO("set context to window");
 
     // 主色窗口大小改变回调
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-    LOG(INFO) << "set window size change callback: sync to frame buffer";
+    SPDLOG_INFO("set window size change callback: sync to frame buffer");
 
     // 捕捉光标
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);

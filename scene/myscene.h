@@ -1,5 +1,5 @@
-#ifndef RENDER_SCENE_H
-#define RENDER_SCENE_H
+#ifndef RENDER_MYSCENE_H
+#define RENDER_MYSCENE_H
 
 #include <memory>
 
@@ -11,17 +11,24 @@
 #include "../engine/shader.h"
 #include "../engine/texture.h"
 
-
+#include "../config.hpp"
 #include "./happy_box.h"
 #include "./light_box.h"
 
 
+
 class MyScene : public Scene {
 protected:
+    // 光源随距离衰减的系数
+    AttenuationDistance attenuation = AttenuationDistance{1.f, 0.09f, 0.032f};
+
+    // 环境光的属性
+    glm::vec3 ambient = glm::vec3(0.05f, 0.05f, 0.05f);
+
     // 场景中的光源
     std::shared_ptr<DirLight> dir_light;
     std::shared_ptr<SpotLight> spot_light;
-    std::shared_ptr<PointLight> point_lights[4];
+    std::vector<std::shared_ptr<PointLight>> point_lights;
 
     // 用到的着色器
     std::shared_ptr<Shader> box_shader;
@@ -31,17 +38,52 @@ protected:
     std::vector<std::shared_ptr<Model>> point_light_models;
     std::vector<std::shared_ptr<Model>> box_models;
 
+    // 纳米装甲
+    std::shared_ptr<Model> nanosuit;
+
     // 摄像机
 
 public:
     void init() override {
-        this->light_init();
+        SPDLOG_INFO("init all light in scene");
+        this->spot_light_init();
+        this->dir_light_init();
+        this->point_light_init();
+
+        SPDLOG_INFO("create light box in scene");
+        this->point_light_init();
+
+        SPDLOG_INFO("create happy box in scene");
+        this->happy_box_init();
+
+        SPDLOG_INFO("init shader in scene");
         this->shader_init();
-        this->light_box_init();
-        this->box_model_init();
+
+        this->nanosuit = ModelBuilder::build(ASSETS("nanosuit/nanosuit.obj"));
     }
 
     void update() override {
+
+        light_box_draw();
+
+        happy_box_draw();
+    }
+
+
+protected:
+
+    void light_box_draw() {
+        this->light_shader->uniform_mat4_set("view", Camera::view_matrix());
+        this->light_shader->uniform_mat4_set("projection", Camera::proj_matrix_get());
+
+        // 绘制光源 box
+        for (unsigned int i = 0; i < 4; ++i) {
+            this->light_shader->uniform_vec3_set("light_color", this->point_lights[i]->diffuse);
+            this->point_light_models[i]->draw(this->light_shader);
+        }
+    }
+
+    void happy_box_draw() {
         // 绘制 box
         this->box_shader->uniform_vec3_set("eye_pos", Camera::pos_get());
         this->spot_light->position = Camera::pos_get();
@@ -53,31 +95,14 @@ public:
             model->draw(this->box_shader);
         }
 
-        // 绘制光源 box
-        for (auto &model : this->point_light_models) {
-            model->draw(this->light_shader);
-        }
+        // todo
+        this->nanosuit->draw(this->box_shader);
     }
 
-    void light_init() {
-        // 统一的距离衰减系数
-        auto attenuation = AttenuationDistance{1.f, 0.09f, 0.032f};
-        auto ambient = glm::vec3(0.05f, 0.05f, 0.05f);
-
-        // 定向光
-        this->dir_light = std::make_shared<DirLight>(ambient, Color::gray41, Color::white);
-        dir_light->direction = glm::vec3(-0.2f, -1.0f, -0.3f);
-
-        // 聚光
-        this->spot_light = std::make_shared<SpotLight>(Color::white, Color::black, Color::white);
-        spot_light->direction = Camera::get_front();
-        spot_light->attenuation = attenuation;
-        spot_light->position = Camera::pos_get();
-        spot_light->inner_cutoff = glm::cos(glm::radians(12.5f));
-        spot_light->outer_cutoff = glm::cos(glm::radians(17.5f));
-
+    /* 初始化点光源，以及参照盒子 */
+    void point_light_init() {
         // 点光源的位置
-        std::vector<glm::vec3> light_positions = {
+        glm::vec3 light_positions[] = {
                 glm::vec3(0.7f, 0.2f, 2.0f),
                 glm::vec3(2.3f, -3.3f, -4.0f),
                 glm::vec3(-4.0f, 2.0f, -12.0f),
@@ -85,7 +110,7 @@ public:
         };
 
         // 点光源的颜色
-        std::vector<glm::vec3> light_colors = {
+        glm::vec3 light_colors[] = {
                 Color::aquamarine2,
                 Color::rosy_brown,
                 Color::indian_red1,
@@ -93,10 +118,33 @@ public:
         };
 
         for (int i = 0; i < 4; ++i) {
-            this->point_lights[i] = std::make_shared<PointLight>(ambient, light_colors[i], Color::white);
-            this->point_lights[i]->position = light_positions[i];
-            this->point_lights[i]->attenuation = attenuation;
+            // 设置光源属性
+            auto light = std::make_shared<PointLight>(ambient, light_colors[i], Color::white);
+            light->position = light_positions[i];
+            light->attenuation = attenuation;
+            this->point_lights.push_back(light);
+
+            // 放置模型
+            auto model = std::make_shared<LightBox>();
+            model->move(light_positions[i]);
+            this->point_light_models.push_back(model);
         }
+    }
+
+    void spot_light_init() {
+        // 聚光
+        this->spot_light = std::make_shared<SpotLight>(Color::white, Color::black, Color::white);
+        spot_light->direction = Camera::get_front();
+        spot_light->attenuation = attenuation;
+        spot_light->position = Camera::pos_get();
+        spot_light->inner_cutoff = glm::cos(glm::radians(12.5f));
+        spot_light->outer_cutoff = glm::cos(glm::radians(17.5f));
+    }
+
+    void dir_light_init() {
+        // 定向光
+        this->dir_light = std::make_shared<DirLight>(ambient, Color::gray41, Color::white);
+        dir_light->direction = glm::vec3(-0.2f, -1.0f, -0.3f);
     }
 
     void shader_init() {
@@ -114,7 +162,7 @@ public:
         this->light_shader = std::make_shared<Shader>(SHADER("light.vert"), SHADER("light.frag"));
     }
 
-    void box_model_init() {
+    void happy_box_init() {
         // 模型的位置
         std::vector<glm::vec3> model_positions = {
                 glm::vec3(0.0f, 0.0f, 0.0f),
@@ -135,13 +183,6 @@ public:
         }
     }
 
-    void light_box_init() {
-        for (auto &point_light : this->point_lights) {
-            auto light_box = std::make_shared<LightBox>();
-            light_box->move(point_light->position);
-            this->point_light_models.push_back(light_box);
-        }
-    }
 };
 
-#endif //RENDER_SCENE_H
+#endif //RENDER_MYSCENE_H

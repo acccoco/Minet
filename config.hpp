@@ -13,6 +13,9 @@
 #define ROOT_DIR "../"
 #define ROOT(path) ROOT_DIR path
 
+#define ASSETS_DIR ROOT("assets/")
+#define ASSETS(path) ASSETS_DIR path
+
 #define SHADER_DIR ROOT("assets/shader/")
 #define SHADER(path) SHADER_DIR path
 

@@ -7,10 +7,15 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
-out vec2 uv;
+out vec3 FragPos;
+out vec3 Normal;
+out vec2 TexCoord;
 
 void main() {
     gl_Position = projection * view * model * vec4(aPos, 1.0);
 
-    uv = aTexCoord;
+    // 插值并传递到 fragment 着色器
+    FragPos = vec3(model * vec4(aPos, 1.0));
+    TexCoord = aTexCoord;
+    Normal = mat3(transpose(inverse(model))) * aNormal;
 }

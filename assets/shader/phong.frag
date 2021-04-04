@@ -46,8 +46,8 @@ struct SpotLight {
 };
 
 struct Material {
-    sampler2D diffuse;// 物体在漫反射、环境光下的颜色
-    sampler2D specular;// 物体高光的颜色
+    sampler2D texture_diffuse_0;// 物体在漫反射、环境光下的颜色
+    sampler2D texture_specular_0;// 物体高光的颜色
 
     float shininess;// 反光度，影响高光光斑的大小
 };
@@ -133,9 +133,9 @@ vec3 phong_calc(LightColor light_color, vec3 light_dir, vec3 normal, vec3 view_d
     float spec_coef = pow(max(0.0, -dot(view_dir, reflect_dir)), material.shininess);
 
     // 环境、漫反射、高光颜色
-    vec3 ambient = light_color.ambient * vec3(texture(material.diffuse, TexCoord));
-    vec3 diffuse = light_color.diffuse * diff_coef * vec3(texture(material.diffuse, TexCoord));
-    vec3 specular = light_color.specular * spec_coef * vec3(texture(material.specular, TexCoord));
+    vec3 ambient = light_color.ambient * vec3(texture(material.texture_diffuse_0, TexCoord));
+    vec3 diffuse = light_color.diffuse * diff_coef * vec3(texture(material.texture_diffuse_0, TexCoord));
+    vec3 specular = light_color.specular * spec_coef * vec3(texture(material.texture_specular_0, TexCoord));
 
     return (ambient + diffuse + specular);
 }

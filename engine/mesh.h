@@ -8,77 +8,90 @@
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
-
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 #include "./shader.h"
-#include "./shader_standard.h"
 #include "./texture.h"
 
 
-/**
- * 顶点：坐标，法线，纹理坐标
- */
-struct Vertex {
-
-    friend class VertexBuilder;
-
+/* 顶点：坐标，法线，纹理坐标 */
+class Vertex {
+public:
     glm::vec3 positon;
     glm::vec3 normal;
     glm::vec2 texcoord = glm::vec2(0.f, 0.f);
 
     Vertex() = default;
-
 };
 
 
-// 面（顶点索引）
-struct Face {
-    unsigned int a{};
-    unsigned int b{};
-    unsigned int c{};
+/* 通过 Assimp 来创建 Vertex 对象 */
+class VertexBuilder {
+public:
+    static Vertex build(const aiVector3t<float> &pos, const aiVector3t<float> &norm);
 
-    unsigned int &x = a;
-    unsigned int &y = b;
-    unsigned int &z = c;
+    static Vertex build(const aiVector3t<float> &pos, const aiVector3t<float> &norm, const aiVector3t<float> &uv);
+
+private:
+    /* 仅初始化 postition 和 normal */
+    static void part_init(Vertex &vertex, const aiVector3t<float> &pos, const aiVector3t<float> &norm);
+};
+
+
+/* 面（顶点索引）*/
+class Face {
+public:
+    unsigned int a;
+    unsigned int b;
+    unsigned int c;
 
     Face() = default;
+    Face(unsigned int a, unsigned int b, unsigned int c) : a(a), b(b), c(c) {}
 };
 
 
+/* 通过 Assimp 来创建 Face 对象 */
+class FaceBuilder {
+public:
+    static Face build(const aiFace &face);
+};
+
+
+/* 模型：由顶点，面，纹理组成 */
 class Mesh {
 public:
-
     std::vector<Vertex> vertices;
     std::vector<Face> faces;
-    std::vector<std::shared_ptr<Texture2D>> textures;
+    std::map<TextureType, std::vector<std::shared_ptr<Texture2D>>> textures;
 
-    std::shared_ptr<Shader> shader;
+    Mesh() = default;
 
     Mesh(std::vector<Vertex> vertices, std::vector<Face> &faces,
-         std::vector<std::shared_ptr<Texture2D>> textures);
+         std::map<TextureType, std::vector<std::shared_ptr<Texture2D>>> textures);
 
-    void shader_bind(const std::shared_ptr<Shader> &_shader);
+    /* 初始化 Mesh 的各种几何属性，如 VAO，VBO */
+    void geometry_init();
 
-    void draw();
+    /* 通过 shader，将该 mesh 绘制出来 */
+    void draw(const std::shared_ptr<Shader> &shader);
 
 private:
     GLuint VAO{}, VBO{}, EBO{};
 
-    struct TextureMap {
-        std::string name;
-        std::shared_ptr<Texture2D> texture;
+    /**
+     * 将特定类型的 texture 传递给 shader
+     * @param unit 纹理单元开始的编号
+     */
+    void texture_transmit(const std::shared_ptr<Shader> &shader, TextureType type, GLuint &unit);
+};
 
-        TextureMap() = default;
 
-        TextureMap(const std::string &name, const std::shared_ptr<Texture2D> &texture) :
-                name(name), texture(texture) {}
-    };
-
-    std::vector<TextureMap> texture_map;
-
-    void init_texture();
-
-    void set_up();
+/* 通过 Assimp 来构建一个 Mesh */
+class MeshBuilder {
+public:
+    static Mesh build(const aiMesh &mesh, const aiScene &scene, const std::string &dir);
 };
 
 #endif //RENDER_MESH_H
