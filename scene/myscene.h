@@ -5,9 +5,12 @@
 
 #include "../engine/scene.h"
 #include "../engine/light.h"
-#include "../engine/shader_ext_light.h"
-#include "../engine/color_const.h"
+#include "../engine/color.h"
+#include "../engine/camera.h"
+#include "../engine/model.h"
+#include "../engine/shader.h"
 #include "../engine/texture.h"
+
 
 #include "./happy_box.h"
 #include "./light_box.h"
@@ -15,38 +18,63 @@
 
 class MyScene : public Scene {
 protected:
+    // 场景中的光源
     std::shared_ptr<DirLight> dir_light;
     std::shared_ptr<SpotLight> spot_light;
     std::shared_ptr<PointLight> point_lights[4];
 
+    // 用到的着色器
     std::shared_ptr<Shader> box_shader;
+    std::shared_ptr<Shader> light_shader;
+
+    // 要渲染的模型
+    std::vector<std::shared_ptr<Model>> point_light_models;
+    std::vector<std::shared_ptr<Model>> box_models;
+
+    // 摄像机
 
 public:
     void init() override {
+        this->light_init();
+        this->shader_init();
+        this->light_box_init();
+        this->box_model_init();
+    }
 
+    void update() override {
+        // 绘制 box
+        this->box_shader->uniform_vec3_set("eye_pos", Camera::pos_get());
+        this->spot_light->position = Camera::pos_get();
+        this->spot_light->direction = Camera::get_front();
+        ShaderExtLight::set(*this->box_shader, *this->spot_light, "spot_light");
+        this->box_shader->uniform_mat4_set(EMatrix::view, Camera::view_matrix());
+        this->box_shader->uniform_mat4_set(EMatrix::projection, Camera::proj_matrix_get());
+        for (auto &model : this->box_models) {
+            model->draw(this->box_shader);
+        }
 
-        // 光源 =================================================================
+        // 绘制光源 box
+        for (auto &model : this->point_light_models) {
+            model->draw(this->light_shader);
+        }
+    }
+
+    void light_init() {
         // 统一的距离衰减系数
         auto attenuation = AttenuationDistance{1.f, 0.09f, 0.032f};
         auto ambient = glm::vec3(0.05f, 0.05f, 0.05f);
 
         // 定向光
-        this->dir_light = std::make_shared<DirLight>();
+        this->dir_light = std::make_shared<DirLight>(ambient, Color::gray41, Color::white);
         dir_light->direction = glm::vec3(-0.2f, -1.0f, -0.3f);
-        dir_light->ambient = ambient;
-        dir_light->diffuse = Color::gray41;
-        dir_light->specular = Color::white;
 
         // 聚光
-        this->spot_light = std::make_shared<SpotLight>();
+        this->spot_light = std::make_shared<SpotLight>(Color::white, Color::black, Color::white);
         spot_light->direction = Camera::get_front();
         spot_light->attenuation = attenuation;
-        spot_light->position = Camera::get_eye();
+        spot_light->position = Camera::pos_get();
         spot_light->inner_cutoff = glm::cos(glm::radians(12.5f));
         spot_light->outer_cutoff = glm::cos(glm::radians(17.5f));
-        spot_light->diffuse = Color::white;
-        spot_light->ambient = Color::black;
-        spot_light->specular = Color::white;
 
         // 点光源的位置
         std::vector<glm::vec3> light_positions = {
@@ -65,26 +93,14 @@ public:
         };
 
         for (int i = 0; i < 4; ++i) {
-            this->point_lights[i] = std::make_shared<PointLight>();
+            this->point_lights[i] = std::make_shared<PointLight>(ambient, light_colors[i], Color::white);
             this->point_lights[i]->position = light_positions[i];
             this->point_lights[i]->attenuation = attenuation;
-            this->point_lights[i]->ambient = ambient;
-            this->point_lights[i]->diffuse = light_colors[i];
-            this->point_lights[i]->specular = Color::white;
         }
+    }
 
-
-        // 贴图 =================================================================
-        // 贴图: 铁箱子
-        Texture2D tex_container2_diffuse(TEXTURE("container2.jpg"));
-        Texture2D tex_container2_specular(TEXTURE("container2_specular.jpg"));
-
-        // 贴图: 滑稽脸
-        Texture2D tex_awesomeface_diffuse(TEXTURE("awesomeface.jpg"));
-
-
-        // 模型: 铁箱子 ===========================================================
-        // 着色器
+    void shader_init() {
+        // 着色器 1
         this->box_shader = std::make_shared<Shader>(SHADER("phong.vert"), SHADER("phong.frag"));
         ShaderExtLight::set(*this->box_shader, *dir_light, "dir_light");
         ShaderExtLight::set(*this->box_shader, *spot_light, "spot_light");
@@ -92,11 +108,14 @@ public:
         ShaderExtLight::set(*this->box_shader, *this->point_lights[1], "point_lights[1]");
         ShaderExtLight::set(*this->box_shader, *this->point_lights[2], "point_lights[2]");
         ShaderExtLight::set(*this->box_shader, *this->point_lights[3], "point_lights[3]");
-        this->box_shader->uniform_tex2d_set("material.diffuse", tex_container2_diffuse.id);
-        this->box_shader->uniform_tex2d_set("material.specular", tex_container2_specular.id);
         this->box_shader->uniform_float_set("material.shininess", 128.f);
 
-        // 模型
+        // 着色器 2
+        this->light_shader = std::make_shared<Shader>(SHADER("light.vert"), SHADER("light.frag"));
+    }
+
+    void box_model_init() {
+        // 模型的位置
         std::vector<glm::vec3> model_positions = {
                 glm::vec3(0.0f, 0.0f, 0.0f),
                 glm::vec3(2.0f, 5.0f, -15.0f),
@@ -111,33 +130,17 @@ public:
         };
         for (auto &model_position : model_positions) {
             auto happy_box = std::make_shared<HappyBox>();
-            happy_box->bind_shader(this->box_shader);
-            happy_box->translate(model_position);
-            this->regist(happy_box);
+            happy_box->move(model_position);
+            this->box_models.push_back(happy_box);
         }
-
-
-        // 模型: 光源盒子 ===========================================================
-        for (auto &point_light : this->point_lights) {
-            // 着色器
-            auto light_shader = std::make_shared<Shader>(SHADER("light.vert"), SHADER("light.frag"));
-            light_shader->uniform_vec3_set("light_color", point_light->diffuse);
-
-            // 模型
-            auto light_box = std::make_shared<LightBox>();
-            light_box->bind_shader(light_shader);
-            light_box->translate(point_light->position);
-            this->regist(light_box);
-        }
-
     }
 
-    void update() override {
-        this->box_shader->uniform_vec3_set("eye_pos", Camera::get_eye());
-
-        this->spot_light->position = Camera::get_eye();
-        this->spot_light->direction = Camera::get_front();
-        ShaderExtLight::set(*this->box_shader, *this->spot_light, "spot_light");
+    void light_box_init() {
+        for (auto &point_light : this->point_lights) {
+            auto light_box = std::make_shared<LightBox>();
+            light_box->move(point_light->position);
+            this->point_light_models.push_back(light_box);
+        }
     }
 };
 
