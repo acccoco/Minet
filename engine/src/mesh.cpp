@@ -37,18 +37,18 @@ void Mesh::geometry_init() {
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->faces.size() * sizeof(Face), &this->faces[0], GL_STATIC_DRAW);
 
     // VAO 顶点属性：position
-    glEnableVertexAttribArray(ELocation::position);
-    glVertexAttribPointer(ELocation::position, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+    glEnableVertexAttribArray(ShaderLocation::position);
+    glVertexAttribPointer(ShaderLocation::position, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                           (void *) offsetof(Vertex, positon));
 
     // VAO 顶点属性：normal
-    glEnableVertexAttribArray(ELocation::normal);
-    glVertexAttribPointer(ELocation::normal, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+    glEnableVertexAttribArray(ShaderLocation::normal);
+    glVertexAttribPointer(ShaderLocation::normal, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                           (void *) offsetof(Vertex, normal));
 
     // VAO 顶点属性：texcoord
-    glEnableVertexAttribArray(ELocation::texcoord);
-    glVertexAttribPointer(ELocation::texcoord, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+    glEnableVertexAttribArray(ShaderLocation::texcoord);
+    glVertexAttribPointer(ShaderLocation::texcoord, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                           (void *) offsetof(Vertex, texcoord));
 
     // 取消绑定 VAO
@@ -63,7 +63,7 @@ void Mesh::texture_transmit(const std::shared_ptr<Shader> &shader, TextureType t
     for (unsigned int i = 0; i < iter->second.size(); ++i) {
         glActiveTexture(GL_TEXTURE0 + unit);
         glBindTexture(GL_TEXTURE_2D, iter->second[i]->id);
-        shader->uniform_tex2d_set(ShaderExtTexture::texture_name(type, i), unit);
+        shader->uniform_tex2d_set(ShaderTextureName::get(type, i), unit);
         ++unit;
     }
 }

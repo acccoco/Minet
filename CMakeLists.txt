@@ -18,6 +18,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage" )
 
 
 # 文件夹的定义
@@ -66,6 +67,7 @@ list(APPEND ALL_SRC
         engine/src/light.cpp
         engine/src/mesh.cpp
         engine/src/model.cpp
+        engine/src/scene.cpp
         engine/src/shader.cpp
         engine/src/texture.cpp
         engine/src/window.cpp
@@ -82,3 +84,8 @@ target_link_libraries(main ${LINKS})
 # =============================================================================
 add_executable(test test.cpp)
 target_link_libraries(test spdlog::spdlog)
+
+
+# 测试用例
+# =============================================================================
+add_executable(test_delegate engine/test/test_delegate.cpp)

@@ -16,7 +16,7 @@ void Model::draw(const std::shared_ptr<Shader> &shader) {
     shader->use();
 
     // 更新 model 矩阵
-    shader->uniform_mat4_set(EMatrix::model, this->model);
+    shader->uniform_mat4_set(ShaderMatrixName::model, this->model);
 
     // 绘制所有的 mesh
     for (auto &mesh : this->meshes) {

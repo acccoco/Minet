@@ -23,59 +23,55 @@
 #define RENDER_ENGINE_CAMERA_H
 
 #include <glad/glad.h>
+#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <spdlog/spdlog.h>
-#include <GLFW/glfw3.h>
 
 
-// 常量定义
-// ============================================================================
+/* 可以移动的方向 */
+enum class TransDirection {
+    front,
+    back,
+    up,
+    down,
+    left,
+    right,
+};
 
-const float CAMERA_MOVE_SPEED = 0.05f;
-const float CAMERA_ROTATE_SPEED = 0.05f;
-const glm::vec3 UP = glm::vec3(0.f, 1.f, 0.f);
-
-
-// 类型定义
-// ============================================================================
-// todo 重构摄像机
 class Camera {
 public:
-    Camera() = default;
+    Camera();
 
-    /**
-     * 根据摄像机的位姿，获得 view matrix
-     */
-    static glm::mat4 view_matrix();
+    glm::mat4 view_matrix_get();
+    glm::vec3 position_get();
+    glm::vec3 front_dir_get();
+    glm::mat4 projection_matrix_get();
 
-    static glm::vec3 pos_get();
+    void translate(TransDirection direction, float distance);
 
-    static glm::vec3 get_front();
+    /* 旋转，可以传入鼠标的坐标差值，yaw 是 x 方向的；pitch 是 y 方向的 */
+    void rotate(float delta_yaw, float delta_pitch);
 
-    /**
-     * 根据摄像机的参数，获得 projection matrix
-     */
-    static glm::mat4 proj_matrix_get();
 
-    /**
-     * 窗口的回调，检查鼠标位置
-     */
-    static void camera_rotate_callback(double delta_x, double delta_y);
+private:
+    // field of view 视角
+    const float fov = 45.0f;
+    const float z_near = 0.1f;
+    const float z_far = 100.f;
+    // 长宽比
+    const float aspect = 4.f / 3.f;
+    const glm::vec3 UP{0.f, 1.f, 0.f};
+    const float CAMERA_MOVE_SPEED = 0.05f;
+    const float CAMERA_ROTATE_SPEED = 0.05f;
 
-    static void init();
+    glm::vec3 position{0.f, 0.f, 0.f};
+    glm::vec3 front{0.f, 0.f, -1.f};
 
-    // 每次渲染循环中调用，检查键盘是否按下
-    static void camera_move_loop(GLFWwindow *window);
+    float yaw = 0.f;
+    float pitch = 0.f;
 
-protected:
-    static glm::vec3 pos;       // (world) 摄像机的位置
-    static glm::vec3 front;     // (world) 摄像机的朝向
-
-    static float yaw;           // 姿态：偏航角
-    static float pitch;         // 姿态：俯仰角
-
-    static glm::mat4 projection;    // 投影矩阵，只读的
+    glm::mat4 projection{};
 };
 
 

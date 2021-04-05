@@ -42,10 +42,14 @@ protected:
     std::shared_ptr<Model> nanosuit;
 
     // 摄像机
-
+    std::shared_ptr<Camera> camera;
 public:
-    void init() override {
-        SPDLOG_INFO("init all light in scene");
+    void _init() override {
+        // 初始化相机
+        this->camera = std::make_shared<Camera>();
+        this->camera_bind(this->camera);
+
+        SPDLOG_INFO("_init all light in scene");
         this->spot_light_init();
         this->dir_light_init();
         this->point_light_init();
@@ -56,13 +60,13 @@ public:
         SPDLOG_INFO("create happy box in scene");
         this->happy_box_init();
 
-        SPDLOG_INFO("init shader in scene");
+        SPDLOG_INFO("_init shader in scene");
         this->shader_init();
 
         this->nanosuit = ModelBuilder::build(ASSETS("nanosuit/nanosuit.obj"));
     }
 
-    void update() override {
+    void _update() override {
 
         light_box_draw();
 
@@ -73,8 +77,8 @@ public:
 protected:
 
     void light_box_draw() {
-        this->light_shader->uniform_mat4_set("view", Camera::view_matrix());
-        this->light_shader->uniform_mat4_set("projection", Camera::proj_matrix_get());
+        this->light_shader->uniform_mat4_set("view", this->camera->view_matrix_get());
+        this->light_shader->uniform_mat4_set("projection", this->camera->projection_matrix_get());
 
         // 绘制光源 box
         for (unsigned int i = 0; i < 4; ++i) {
@@ -85,12 +89,12 @@ protected:
 
     void happy_box_draw() {
         // 绘制 box
-        this->box_shader->uniform_vec3_set("eye_pos", Camera::pos_get());
-        this->spot_light->position = Camera::pos_get();
-        this->spot_light->direction = Camera::get_front();
+        this->box_shader->uniform_vec3_set("eye_pos", this->camera->position_get());
+        this->spot_light->position = this->camera->position_get();
+        this->spot_light->direction = this->camera->front_dir_get();
         ShaderExtLight::set(*this->box_shader, *this->spot_light, "spot_light");
-        this->box_shader->uniform_mat4_set(EMatrix::view, Camera::view_matrix());
-        this->box_shader->uniform_mat4_set(EMatrix::projection, Camera::proj_matrix_get());
+        this->box_shader->uniform_mat4_set(ShaderMatrixName::view, this->camera->view_matrix_get());
+        this->box_shader->uniform_mat4_set(ShaderMatrixName::projection, this->camera->projection_matrix_get());
         for (auto &model : this->box_models) {
             model->draw(this->box_shader);
         }
@@ -134,9 +138,9 @@ protected:
     void spot_light_init() {
         // 聚光
         this->spot_light = std::make_shared<SpotLight>(Color::white, Color::black, Color::white);
-        spot_light->direction = Camera::get_front();
+        spot_light->direction = this->camera->front_dir_get();
         spot_light->attenuation = attenuation;
-        spot_light->position = Camera::pos_get();
+        spot_light->position = this->camera->position_get();
         spot_light->inner_cutoff = glm::cos(glm::radians(12.5f));
         spot_light->outer_cutoff = glm::cos(glm::radians(17.5f));
     }

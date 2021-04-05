@@ -15,14 +15,14 @@
 #include "light.h"
 
 
-struct ELocation {
+struct ShaderLocation {
     static const GLuint position;
     static const GLuint normal;
     static const GLuint texcoord;
 };
 
 
-struct EMatrix {
+struct ShaderMatrixName {
     static const std::string model;
     static const std::string view;
     static const std::string projection;
@@ -93,9 +93,9 @@ public:
 };
 
 
-class ShaderExtTexture {
+class ShaderTextureName {
 public:
-    static std::string texture_name(TextureType texture_type, GLuint index) {
+    static std::string get(TextureType texture_type, GLuint index) {
         std::string type_str;
         switch (texture_type) {
             case diffuse: type_str = "diffuse"; break;

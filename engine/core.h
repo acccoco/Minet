@@ -10,14 +10,12 @@
 /* 初始化glad，必须在设置 glfw 的 context 之后调用 */
 void init_glad();
 
-/* 初始化glfw */
-void init_glfw();
+/* 初始化glfw，设置版本等 */
+void glfw_init();
 
-void init_log();
+/* 初始化日志的格式等 */
+void logger_init();
 
-GLFWwindow* init_window(int width, int height);
-
-void process_esc(GLFWwindow *window);
 
 
 #endif //RENDER_INIT_H

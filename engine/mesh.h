@@ -58,7 +58,7 @@ public:
     static Face build(const aiFace &face);
 };
 
-
+// todo ：支持构造函数，Builder 应该是非入侵的，使用 Mesh 应该完全不用关心 Builder，其他的 Builder 也是一样的改造
 /* 模型：由顶点，面，纹理组成 */
 class Mesh {
 public:

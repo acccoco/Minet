@@ -11,9 +11,14 @@ class Scene2 : public Scene {
 private:
     std::shared_ptr<Shader> shader;
     std::shared_ptr<Model> model;
+    std::shared_ptr<Camera> camera;
 
 public:
-    void init() override {
+    void _init() override {
+        // 初始化摄像机
+        this->camera = std::make_shared<Camera>();
+        this->camera_bind(this->camera);
+
         this->shader = std::make_shared<Shader>(SHADER("light.vert"), SHADER("light.frag"));
         this->shader->uniform_vec3_set("light_color", Color::cyan1);
 
@@ -21,10 +26,10 @@ public:
         this->model->move(glm::vec3(0.f, 0.f, -5.f));
     }
 
-    void update() override {
+    void _update() override {
         this->shader->use();
-        this->shader->uniform_mat4_set("view", Camera::view_matrix());
-        this->shader->uniform_mat4_set("projection", Camera::proj_matrix_get());
+        this->shader->uniform_mat4_set("view", this->camera->view_matrix_get());
+        this->shader->uniform_mat4_set("projection", this->camera->projection_matrix_get());
         this->model->draw(this->shader);
         glUseProgram(0);
     }

@@ -1,65 +1,61 @@
 #include "../camera.h"
 
-glm::vec3 Camera::pos;
-glm::vec3 Camera::front;
-glm::mat4 Camera::projection;
-float Camera::yaw;
-float Camera::pitch;
+#include <map>
 
-glm::mat4 Camera::view_matrix() {
+
+glm::mat4 Camera::view_matrix_get() {
     front.x = -cos(glm::radians(pitch)) * sin(glm::radians(yaw));
     front.y = sin(glm::radians(pitch));
     front.z = -cos(glm::radians(pitch)) * cos(glm::radians(yaw));
-    return glm::lookAt(pos, pos + glm::normalize(front), UP);
+    return glm::lookAt(this->position, this->position + glm::normalize(front), UP);
 }
 
-glm::vec3 Camera::pos_get() {
-    return Camera::pos;
+glm::vec3 Camera::position_get() {
+    return this->position;
 }
 
-glm::vec3 Camera::get_front() {
-    return Camera::front;
+glm::vec3 Camera::front_dir_get() {
+    return this->front;
 }
 
-glm::mat4 Camera::proj_matrix_get() {
-    return projection;
+glm::mat4 Camera::projection_matrix_get() {
+    return this->projection;
 }
 
-void Camera::camera_rotate_callback(double delta_x, double delta_y) {
-    Camera::yaw -= delta_x * CAMERA_ROTATE_SPEED;
-    Camera::pitch += delta_y * CAMERA_ROTATE_SPEED;
+void Camera::translate(TransDirection direction, float distance) {
+    // 当前摄像机的右边是哪个方向
+    glm::vec3 cur_right = glm::normalize(glm::cross(this->front, UP));
 
-    if (Camera::pitch < -89.f)
-        Camera::pitch = -89.f;
-    if (Camera::pitch > 89.f)
-        Camera::pitch = 89.f;
+    // 摄像机的相对方向在世界坐标系下的向量表示
+    std::map<TransDirection, glm::vec3> dir_map {
+            {TransDirection::front, this->front},
+            {TransDirection::back,  -this->front},
+            {TransDirection::up,    UP},
+            {TransDirection::down,  -UP},
+            {TransDirection::left,  -cur_right},
+            {TransDirection::right, cur_right},
+    };
+
+    // 进行移动
+    auto iter = dir_map.find(direction);
+    if (iter == dir_map.end())
+        return;
+    this->position += distance * CAMERA_MOVE_SPEED * iter->second;
 }
 
-void Camera::init() {
-    SPDLOG_INFO("global camera init.");
+void Camera::rotate(float delta_yaw, float delta_pitch) {
+    this->yaw -= delta_yaw * CAMERA_ROTATE_SPEED;
+    this->pitch += delta_pitch * CAMERA_ROTATE_SPEED;
 
-    yaw = 0;
-    pitch = 0;
-    pos = glm::vec3(0.f, 0.f, 0.f);
-    front = glm::vec3(0.f, 0.f, -1.f);
-
-    projection = glm::perspective(glm::radians(45.0f), 4 / (float) 3, 0.1f, 100.0f);
+    // 限制摄像机的俯仰角度
+    if (this->pitch < -89.f)
+        this->pitch = -89.f;
+    else if (this->pitch > 89.f)
+        this->pitch = 89.f;
 }
 
-void Camera::camera_move_loop(GLFWwindow *window) {
-    // 前后左右
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        Camera::pos += CAMERA_MOVE_SPEED * Camera::front;
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        Camera::pos -= CAMERA_MOVE_SPEED * Camera::front;
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        Camera::pos -= glm::normalize(glm::cross(Camera::front, UP)) * CAMERA_MOVE_SPEED;
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        Camera::pos += glm::normalize(glm::cross(Camera::front, UP)) * CAMERA_MOVE_SPEED;
+Camera::Camera() {
+    SPDLOG_INFO("_init camera.");
 
-    // 上下
-    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-        Camera::pos += CAMERA_MOVE_SPEED * UP;
-    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-        Camera::pos -= CAMERA_MOVE_SPEED * UP;
+    this->projection = glm::perspective(glm::radians(this->fov), this->aspect, this->z_near, this->z_far);
 }

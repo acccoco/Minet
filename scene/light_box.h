@@ -3,6 +3,8 @@
 
 #include "../engine/model.h"
 
+#include "./cube.h"
+
 
 class LightBox : public Model {
 public:

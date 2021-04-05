@@ -13,14 +13,14 @@ const int LOG_INFO_LEN = 512;
 
 
 
-const GLuint ELocation::position = 0;
-const GLuint ELocation::normal = 1;
-const GLuint ELocation::texcoord = 2;
+const GLuint ShaderLocation::position = 0;
+const GLuint ShaderLocation::normal = 1;
+const GLuint ShaderLocation::texcoord = 2;
 
 
-const std::string EMatrix::model = "model";
-const std::string EMatrix::view = "view";
-const std::string EMatrix::projection = "projection";
+const std::string ShaderMatrixName::model = "model";
+const std::string ShaderMatrixName::view = "view";
+const std::string ShaderMatrixName::projection = "projection";
 
 
 // 类方法实现 ======================================================================
