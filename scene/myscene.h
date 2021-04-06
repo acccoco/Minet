@@ -18,7 +18,7 @@
 
 
 class MyScene : public Scene {
-protected:
+private:
     // 光源随距离衰减的系数
     AttenuationDistance attenuation = AttenuationDistance{1.f, 0.09f, 0.032f};
 
@@ -38,16 +38,12 @@ protected:
     std::vector<std::shared_ptr<Model>> point_light_models;
     std::vector<std::shared_ptr<Model>> box_models;
 
-    // 纳米装甲
-    std::shared_ptr<Model> nanosuit;
-
     // 摄像机
     std::shared_ptr<Camera> camera;
-public:
+
     void _init() override {
         // 初始化相机
         this->camera = std::make_shared<Camera>();
-        this->camera_bind(this->camera);
 
         SPDLOG_INFO("_init all light in scene");
         this->spot_light_init();
@@ -62,26 +58,23 @@ public:
 
         SPDLOG_INFO("_init shader in scene");
         this->shader_init();
-
-        this->nanosuit = ModelBuilder::build(ASSETS("nanosuit/nanosuit.obj"));
     }
 
     void _update() override {
+
+        this->camera->update();
 
         light_box_draw();
 
         happy_box_draw();
     }
 
-
-protected:
-
     void light_box_draw() {
         this->light_shader->uniform_mat4_set("view", this->camera->view_matrix_get());
         this->light_shader->uniform_mat4_set("projection", this->camera->projection_matrix_get());
 
         // 绘制光源 box
-        for (unsigned int i = 0; i < 4; ++i) {
+        for (unsigned int i = 0; i < 5; ++i) {
             this->light_shader->uniform_vec3_set("light_color", this->point_lights[i]->diffuse);
             this->point_light_models[i]->draw(this->light_shader);
         }
@@ -98,9 +91,6 @@ protected:
         for (auto &model : this->box_models) {
             model->draw(this->box_shader);
         }
-
-        // todo
-        this->nanosuit->draw(this->box_shader);
     }
 
     /* 初始化点光源，以及参照盒子 */
@@ -110,7 +100,8 @@ protected:
                 glm::vec3(0.7f, 0.2f, 2.0f),
                 glm::vec3(2.3f, -3.3f, -4.0f),
                 glm::vec3(-4.0f, 2.0f, -12.0f),
-                glm::vec3(0.0f, 0.0f, -3.0f)
+                glm::vec3(0.0f, 0.0f, -3.0f),
+                glm::vec3(0.0f, 0.0f, -7.0f),
         };
 
         // 点光源的颜色
@@ -119,9 +110,10 @@ protected:
                 Color::rosy_brown,
                 Color::indian_red1,
                 Color::deep_sky_blue2,
+                Color::deep_sky_blue2,
         };
 
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < 5; ++i) {
             // 设置光源属性
             auto light = std::make_shared<PointLight>(ambient, light_colors[i], Color::white);
             light->position = light_positions[i];

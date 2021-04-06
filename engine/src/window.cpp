@@ -1,4 +1,12 @@
 #include "../window.h"
+#include "../core.h"
+
+
+Window *g_window = nullptr;
+double Window::mouse_x;
+double Window::mouse_y;
+std::vector<KeyboardEvent> Window::key_events;
+bool Window::mouse_init = false;
 
 
 DelegateList<double, double> Window::mouse_pos_delegates;
@@ -12,6 +20,14 @@ void Window::use() {
 }
 
 void Window::mouse_pos_cbk(GLFWwindow *_window, double x, double y) {
+    // 更新鼠标位置到全局
+    mouse_x = x;
+    mouse_y = y;
+
+    // 鼠标的值已经可以使用了
+    mouse_init = true;
+
+    // 调用当前事件列表中的所有事件
     mouse_pos_delegates.invoke(x, y);
 }
 
@@ -32,21 +48,21 @@ void Window::update() {
     };
 
     // 查表，将 GLFW 的键盘封装为自定义的事件类型
-    std::vector<KeyboardEvent> events;
+    key_events.clear();
     for (const auto &iter : keyboard_event_map) {
         if (glfwGetKey(window, iter.first) == GLFW_PRESS)
-            events.push_back(iter.second);
+            key_events.push_back(iter.second);
     }
 
     // 调用注册键盘事件的一系列委托
-    keyboard_delegates.invoke(events);
+    keyboard_delegates.invoke(key_events);
 }
 
 void Window::frame_buffer_cbk(GLFWwindow *_window, int _width, int _height) {
     glViewport(0, 0, _width, _height);
 }
 
-Window::Window() {
+Window::Window() noexcept {
     assert(width > 0 && height > 0);
     SPDLOG_INFO("create window ({:d}, {:d})", width, height);
 
@@ -57,9 +73,6 @@ Window::Window() {
         glfwTerminate();
         exit(-1);
     }
-
-    // 初始化
-    this->init();
 }
 
 void Window::close_window_cbk(const std::vector<KeyboardEvent> &events) {
@@ -70,8 +83,10 @@ void Window::close_window_cbk(const std::vector<KeyboardEvent> &events) {
 }
 
 void Window::init() {
+    g_window = new Window();
+
     // 注册回调函数
-    glfwSetCursorPosCallback(window, this->mouse_pos_cbk);
+    glfwSetCursorPosCallback(window, mouse_pos_cbk);
     glfwSetFramebufferSizeCallback(window, frame_buffer_cbk);
 
     // 关闭窗口的回调
@@ -79,4 +94,10 @@ void Window::init() {
 
     // 捕捉光标
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+}
+
+Window *Window::get() {
+    if (g_window == nullptr)
+        Window::init();
+    return g_window;
 }

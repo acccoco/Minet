@@ -27,14 +27,24 @@ enum class KeyboardEvent {
 
 class Window {
 public:
+    // 鼠标的坐标
+    static double mouse_x, mouse_y;
+    static bool mouse_init;            // 鼠标是否开始移动了
+
+    // 键盘事件
+    static std::vector<KeyboardEvent> key_events;
+
     // 存放键盘和鼠标的回调函数
     static DelegateList<double, double> mouse_pos_delegates;
     static DelegateList<const std::vector<KeyboardEvent>&> keyboard_delegates;
 
     static GLFWwindow *window;
 
-    /* 创建窗口，注册回调函数，捕捉光标等 */
-    Window();
+    /* 获得全局的 window 对象 */
+    static Window* get();
+
+    /* 初始化全局的对象 */
+    static void init();
 
     /* 将窗口对象设置为上下文对象 */
     static void use() ;
@@ -54,8 +64,8 @@ private:
     const int height = 1200;
     const std::string title = "AccRender";
 
-    /* 初始化：绑定事件，设置基本参数等 */
-    void init();
+    /* 创建窗口，注册回调函数，捕捉光标等 */
+    Window() noexcept;
 
     /* 鼠标位置的回调，实际是调用委托列表 */
     static void mouse_pos_cbk(GLFWwindow *window, double x, double y);
