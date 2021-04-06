@@ -22,25 +22,25 @@ int main() {
     /* 初始化 */
     logger_init();
     glfw_init();
-    Window window;
-    window.use();
+    Window::init();
+    Window::use();
     init_glad();
 
     // 场景初始化
-    MyScene scene;
-    scene.init(window);
+    Scene2 scene;
+    scene.init();
 
     glEnable(GL_DEPTH_TEST);
     SPDLOG_INFO("start loop");
-    while (!window.need_close()) {
+    while (!Window::need_close()) {
         glClearColor(0.f, 0.f, 0.f, 0.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        window.update();
+        Window::update();
 
         scene.update();
 
-        glfwSwapBuffers(window.window);
+        glfwSwapBuffers(Window::window);
         glfwPollEvents();
     }
     glfwTerminate();

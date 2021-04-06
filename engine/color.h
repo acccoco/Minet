@@ -4,9 +4,6 @@
 #include <glm/glm.hpp>
 
 
-typedef glm::vec3 ColorT;
-
-
 /**
  * 颜色常量
  */

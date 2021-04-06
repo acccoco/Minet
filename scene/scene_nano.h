@@ -19,16 +19,17 @@ private:
     std::shared_ptr<Shader> tex_shader;
 
     std::shared_ptr<Camera> camera;
-public:
+
     void _init() override {
         this->camera = std::make_shared<Camera>();
-        this->camera_bind(this->camera);
 
         this->model_nano = ModelBuilder::build(ASSETS("nanosuit/nanosuit.obj"));
         this->tex_shader = std::make_shared<Shader>(SHADER("tex.vert"), SHADER("tex.frag"));
     }
 
     void _update() override {
+        this->camera->update();
+
         this->tex_shader->uniform_mat4_set(ShaderMatrixName::view, this->camera->view_matrix_get());
         this->tex_shader->uniform_mat4_set(ShaderMatrixName::projection, this->camera->projection_matrix_get());
 

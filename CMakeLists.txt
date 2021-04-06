@@ -3,13 +3,18 @@ project(render)
 
 # 依赖库
 # =============================================================================
-# OpenGL 自带的
-# glm：msys
-# spdlog：msys
-# glfw：msys
-# assimp：msys
-# glad：源代码
-# stb_image ：源代码
+# 自带的：
+# OpenGL
+#
+# 通过 MSYS2 安装：
+# glm
+# spdlog
+# glfw
+# assimp
+#
+# 源代码：
+# glad
+# stb_image
 # =============================================================================
 
 
@@ -18,12 +23,6 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage" )
-
-
-# 文件夹的定义
-set(LIB_DIR "C:/Users/bigso/lib")
-set(MINGW64 "C:/msys64/mingw64")
 
 
 # 找到 pkg
@@ -44,18 +43,18 @@ list(APPEND LINKS
 
 
 # 头文件
-include_directories(${MINGW64}/include)
+include_directories(C:/msys64/mingw64/include)
 include_directories(
-        ${LIB_DIR}/glad/include
-        ${LIB_DIR}/stb_image/include
+        lib/glad/include
+        lib/stb_image/include
 )
 
 
 # 一起编译的源文件
 set(ALL_SRC)
 list(APPEND ALL_SRC
-        ${LIB_DIR}/glad/src/glad.c
-        ${LIB_DIR}/stb_image/src/stb_image.cpp
+        lib/glad/src/glad.c
+        lib/stb_image/src/stb_image.cpp
         )
 
 
