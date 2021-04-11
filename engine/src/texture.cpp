@@ -1,6 +1,7 @@
 #include "../texture.h"
 
-Texture2D::Texture2D(std::string path) : path(std::move(path)) {
+Texture2D::Texture2D(std::string path, bool repeat)
+        : path(std::move(path)), repeat(repeat) {
     this->init();
 }
 
@@ -9,21 +10,23 @@ void Texture2D::init() {
     unsigned char *data = this->load_file(this->path);
 
     // 输送到 GPU
-    this->id = Texture2D::regist_texture(data, width, height, this->nr_channels);
+    this->id = Texture2D::regist_texture(data, width, height, this->nr_channels, repeat);
 
     // 释放内存
     stbi_image_free(data);
 }
 
-unsigned int Texture2D::regist_texture(unsigned char *data, int width, int height, int nr_channels) {
+unsigned int Texture2D::regist_texture(unsigned char *data, int width, int height, int nr_channels, bool repeat) {
     unsigned int texture;
     glGenTextures(1, &texture);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);
 
     // uv坐标超出范围后如何采样：重复
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    // 纹理环绕的方式：当超出 uv 后，是继续对边缘进行采样，还是让纹理重复
+    auto repeat_type = repeat ? GL_REPEAT: GL_CLAMP_TO_EDGE;
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, repeat_type);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, repeat_type);
 
     // 材质放大和缩小时，应该如何采样
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);

@@ -28,7 +28,7 @@ public:
     unsigned int id = 0;
     Texture2D() = default;
 
-explicit Texture2D(std::string path);
+explicit Texture2D(std::string path, bool repeat = true);
 
 private:
     std::string path;
@@ -36,11 +36,18 @@ private:
     int height = 0;
     int nr_channels = 0;
 
+    // 纹理环绕，是重复还是边缘延伸
+    bool repeat = true;
+
     /* 从文件中取得数据，传送到 GPU 中 */
     void init();
 
-    // 将材质输送到 gpu
-    static unsigned int regist_texture(unsigned char *data, int width, int height, int nr_channels);
+    /**
+     * 将材质输送到 gpu，创建一个材质的对象
+     * @param repeat 纹理环绕的方式：当超出 uv 后，是继续对边缘进行采样，还是让纹理重复
+     * @return
+     */
+    static unsigned int regist_texture(unsigned char *data, int width, int height, int nr_channels, bool repeat);
 
     // 加载图片
     unsigned char *load_file(std::string &file_path);
