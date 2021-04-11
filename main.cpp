@@ -15,7 +15,7 @@ unsigned int init_cube();
 
 unsigned int init_plane();
 
-unsigned int init_grass();
+unsigned int init_square();
 
 int main() {
     /* 初始化 */
@@ -31,17 +31,19 @@ int main() {
     // 模型
     GLuint cube = init_cube();
     GLuint plane = init_plane();
-    GLuint grass = init_grass();
+    GLuint grass = init_square();
 
     // shader
-    auto shader = Shader(SHADER("diffuse.vert"), SHADER("blend.frag"));
+    auto shader = Shader(SHADER("diffuse.vert"), SHADER("diffuse.frag"));
 
     // 纹理
     auto lava_diffuse = Texture2D(TEXTURE("lava/diffuse.tga"));
     auto box_diffuse = Texture2D(TEXTURE("container2.jpg"));
-    auto grass_diffuse = Texture2D(TEXTURE("grass.png"), false);
+    auto window_diffuse = Texture2D(TEXTURE("transparent_window.png"), false);
 
     glEnable(GL_DEPTH_TEST);
+    // 开启混合
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     SPDLOG_INFO("start loop");
     while (!Window::need_close()) {
         glClearColor(0.f, 0.f, 0.f, 0.f);
@@ -75,23 +77,29 @@ int main() {
         shader.uniform_mat4_set("model", model_cube_2);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
-        // 植被
+        // 最后渲染半透明窗户
         glBindVertexArray(grass);
-        glBindTexture(GL_TEXTURE_2D, grass_diffuse.id);
+        glBindTexture(GL_TEXTURE_2D, window_diffuse.id);
 
-        std::vector<glm::vec3> vegetation{
+        std::vector<glm::vec3> pos_list{
                 glm::vec3(-1.5f, 0.0f, -0.48f),
                 glm::vec3(1.5f, 0.0f, 0.51f),
                 glm::vec3(0.0f, 0.0f, 0.7f),
                 glm::vec3(-0.3f, 0.0f, -2.3f),
                 glm::vec3(0.5f, 0.0f, -0.6f)
         };
-        glm::mat4 model_grass;
-        for (auto & i : vegetation) {
-            model_grass = glm::translate(glm::one<glm::mat4>(), i);
-            shader.uniform_mat4_set("model", model_grass);
+        // 根据到摄像机的距离,对物体进行排序,按照距离的从远到近渲染,得到正确的透明效果
+        std::sort(pos_list.begin(), pos_list.end(), [&camera](const glm::vec3 &a, const glm::vec3 &b) {
+            return glm::length(camera->position_get() - a) <= glm::length(camera->position_get() - b);
+        });
+        glm::mat4 model_window;
+        glEnable(GL_BLEND);
+        for (auto iter = pos_list.rbegin(); iter != pos_list.rend(); ++iter) {
+            model_window = glm::translate(glm::one<glm::mat4>(), *iter);
+            shader.uniform_mat4_set("model", model_window);
             glDrawArrays(GL_TRIANGLES, 0, 6);
         }
+        glDisable(GL_BLEND);
 
         glfwSwapBuffers(Window::window);
         glfwPollEvents();
@@ -159,8 +167,8 @@ float planeVertices[] = {
 };
 
 
-// 四边形面片：植物草
-float grassVertices[] = {
+// 四边形面片
+float square_vertices[] = {
         // positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
         0.0f, 0.5f, 0.0f, 0.0f, 0.0f,
         0.0f, -0.5f, 0.0f, 0.0f, 1.0f,
@@ -171,14 +179,14 @@ float grassVertices[] = {
         1.0f, 0.5f, 0.0f, 1.0f, 0.0f
 };
 
-unsigned int init_grass() {
+unsigned int init_square() {
     unsigned int grass_VAO, grass_VBO;
     glGenVertexArrays(1, &grass_VAO);
     glGenBuffers(1, &grass_VBO);
     glBindVertexArray(grass_VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, grass_VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(grassVertices), &grassVertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(square_vertices), &square_vertices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *) nullptr);
     glEnableVertexAttribArray(1);
