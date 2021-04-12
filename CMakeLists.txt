@@ -63,6 +63,7 @@ list(APPEND ALL_SRC
         engine/src/camera.cpp
         engine/src/color.cpp
         engine/src/core.cpp
+        engine/src/framebuffer.cpp
         engine/src/light.cpp
         engine/src/mesh.cpp
         engine/src/model.cpp
