@@ -20,6 +20,8 @@ unsigned int init_skybox();
 
 unsigned int cubemap_gen();
 
+unsigned int init_box_normal();
+
 int main() {
     /* 初始化 */
     logger_init();
@@ -35,10 +37,12 @@ int main() {
     GLuint cube = init_cube();
     GLuint plane = init_plane();
     GLuint skybox = init_skybox();
+    GLuint box_normal = init_box_normal();
 
     // shader
     auto diffuse_shader = Shader(SHADER("diffuse.vert"), SHADER("diffuse.frag"));
     auto skybox_shader = Shader(SHADER("sky.vert"), SHADER("sky.frag"));
+    auto reflect_shader = Shader(SHADER("reflect.vert"), SHADER("reflect.frag"));
 
     // 纹理
     auto lava_diffuse = Texture2D(TEXTURE("lava/diffuse.tga"));
@@ -60,6 +64,9 @@ int main() {
         skybox_shader.use();
         skybox_shader.uniform_mat4_set("view", glm::mat4(glm::mat3(camera->view_matrix_get())));
         skybox_shader.uniform_mat4_set("projection", camera->projection_matrix_get());
+        reflect_shader.use();
+        reflect_shader.uniform_mat4_set("view", camera->view_matrix_get());
+        reflect_shader.uniform_mat4_set("projection", camera->projection_matrix_get());
 
         // 地面
         diffuse_shader.use();
@@ -71,6 +78,7 @@ int main() {
         glBindVertexArray(0);
 
         // 立方体
+        diffuse_shader.use();
         glBindVertexArray(cube);
         glBindTexture(GL_TEXTURE_2D, box_diffuse.id);
         diffuse_shader.uniform_tex2d_set("texture1", 0);
@@ -82,6 +90,17 @@ int main() {
         glm::mat4 model_cube_2 = glm::translate(glm::one<glm::mat4>(), glm::vec3(2.0f, 0.01f, 0.0f));
         diffuse_shader.uniform_mat4_set("model", model_cube_2);
         glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        // 反射效果的盒子
+        reflect_shader.use();
+        glBindVertexArray(box_normal);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_tex);
+        reflect_shader.uniform_float_set("sky_texture", 0);
+        glm::mat4 model_box = glm::translate(glm::one<glm::mat4>(), glm::vec3(-1.f, 1.f, 1.f));
+        reflect_shader.uniform_mat4_set("model", model_box);
+        reflect_shader.uniform_vec3_set("eye_pos", camera->position_get());
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glBindVertexArray(0);
 
         // 天空盒
         // 最后渲染天空盒，让天空盒的深度始终为最大
@@ -229,6 +248,50 @@ float skybox_vertices[] = {
         1.0f, -1.0f, 1.0f
 };
 
+float box_normal_vertices[] = {
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+        0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+
+        0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+        0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+        0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+        0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+        0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+        0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+        0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+        0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+        0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+        0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+        0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+};
+
 
 float planeVertices[] = {
         5.0f, -0.5f, 5.0f, 2.0f, 0.0f,
@@ -239,6 +302,23 @@ float planeVertices[] = {
         -5.0f, -0.5f, -5.0f, 0.0f, 2.0f,
         5.0f, -0.5f, -5.0f, 2.0f, 2.0f
 };
+
+unsigned int init_box_normal() {
+    unsigned int box_VAO, box_VBO;
+    glGenVertexArrays(1, &box_VAO);
+    glGenBuffers(1, &box_VBO);
+    glBindVertexArray(box_VAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, box_VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(box_normal_vertices), &box_normal_vertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *) nullptr);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *) (3 * sizeof(float)));
+
+    glBindVertexArray(0);
+    return box_VAO;
+}
 
 
 unsigned int init_cube() {
