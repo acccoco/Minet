@@ -2,6 +2,7 @@
 #include <vector>
 
 #include <glad/glad.h>
+#include <stb_image.h>
 #include <assimp/Importer.hpp>
 
 #include "./engine/core.h"
@@ -11,9 +12,13 @@
 #include "./scene/scene_nano.h"
 
 
-
 unsigned int init_cube();
+
 unsigned int init_plane();
+
+unsigned int init_skybox();
+
+unsigned int cubemap_gen();
 
 int main() {
     /* 初始化 */
@@ -29,13 +34,16 @@ int main() {
     // 模型
     GLuint cube = init_cube();
     GLuint plane = init_plane();
+    GLuint skybox = init_skybox();
 
     // shader
-    auto shader = Shader(SHADER("diffuse.vert"), SHADER("diffuse.frag"));
+    auto diffuse_shader = Shader(SHADER("diffuse.vert"), SHADER("diffuse.frag"));
+    auto skybox_shader = Shader(SHADER("sky.vert"), SHADER("sky.frag"));
 
     // 纹理
     auto lava_diffuse = Texture2D(TEXTURE("lava/diffuse.tga"));
     auto box_diffuse = Texture2D(TEXTURE("container2.jpg"));
+    auto skybox_tex = cubemap_gen();
 
     glEnable(GL_DEPTH_TEST);
     SPDLOG_INFO("start loop");
@@ -46,32 +54,46 @@ int main() {
         camera->update();
 
         // 着色器的基本属性
-        shader.use();
-        shader.uniform_mat4_set("view", camera->view_matrix_get());
-        shader.uniform_mat4_set("projection", camera->projection_matrix_get());
+        diffuse_shader.use();
+        diffuse_shader.uniform_mat4_set("view", camera->view_matrix_get());
+        diffuse_shader.uniform_mat4_set("projection", camera->projection_matrix_get());
+        skybox_shader.use();
+        skybox_shader.uniform_mat4_set("view", glm::mat4(glm::mat3(camera->view_matrix_get())));
+        skybox_shader.uniform_mat4_set("projection", camera->projection_matrix_get());
 
         // 地面
+        diffuse_shader.use();
         glBindVertexArray(plane);
         glBindTexture(GL_TEXTURE_2D, lava_diffuse.id);
-        shader.uniform_tex2d_set("texture1", 0);
-
-        shader.uniform_mat4_set("model", glm::one<glm::mat4>());
+        diffuse_shader.uniform_tex2d_set("texture1", 0);
+        diffuse_shader.uniform_mat4_set("model", glm::one<glm::mat4>());
         glDrawArrays(GL_TRIANGLES, 0, 6);
         glBindVertexArray(0);
 
         // 立方体
         glBindVertexArray(cube);
         glBindTexture(GL_TEXTURE_2D, box_diffuse.id);
-        shader.uniform_tex2d_set("texture1", 0);
+        diffuse_shader.uniform_tex2d_set("texture1", 0);
 
         glm::mat4 model_cube_1 = glm::translate(glm::one<glm::mat4>(), glm::vec3(-1.f, 0.01f, -1.f));
-        shader.uniform_mat4_set("model", model_cube_1);
+        diffuse_shader.uniform_mat4_set("model", model_cube_1);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         glm::mat4 model_cube_2 = glm::translate(glm::one<glm::mat4>(), glm::vec3(2.0f, 0.01f, 0.0f));
-        shader.uniform_mat4_set("model", model_cube_2);
+        diffuse_shader.uniform_mat4_set("model", model_cube_2);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
+        // 天空盒
+        // 最后渲染天空盒，让天空盒的深度始终为最大
+        glDepthMask(GL_FALSE);
+        glDepthFunc(GL_LEQUAL);
+        skybox_shader.use();
+        glBindVertexArray(skybox);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_tex);
+        skybox_shader.uniform_float_set("texture1", 0);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glDepthMask(GL_TRUE);
+        glDepthFunc(GL_LESS);
 
         glfwSwapBuffers(Window::window);
         glfwPollEvents();
@@ -80,60 +102,142 @@ int main() {
 }
 
 
+unsigned int cubemap_gen() {
+    unsigned int texture_id;
+    glGenTextures(1, &texture_id);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, texture_id);
+
+    std::vector<std::pair<GLuint, std::string>> tex_conf{
+            {GL_TEXTURE_CUBE_MAP_POSITIVE_X, TEXTURE("skybox/sky_Right.png")},       // 右，右手系
+            {GL_TEXTURE_CUBE_MAP_NEGATIVE_X, TEXTURE("skybox/sky_Left.png")},       // 左
+            {GL_TEXTURE_CUBE_MAP_POSITIVE_Y, TEXTURE("skybox/sky_Up.png")},       // 上
+            {GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, TEXTURE("skybox/sky_Down.png")},       // 下
+            {GL_TEXTURE_CUBE_MAP_POSITIVE_Z, TEXTURE("skybox/sky_Back.png")},       // 后
+            {GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, TEXTURE("skybox/sky_Front.png")},       // 前
+    };
+    int width, height, nr_channels;
+    unsigned char *data;
+    for (const auto &iter : tex_conf) {
+        data = stbi_load(iter.second.c_str(), &width, &height, &nr_channels, 0);
+        if (!data) {
+            SPDLOG_ERROR("fail to load skybox texture, {}", iter.second);
+            throw std::exception();
+        }
+        GLuint format = nr_channels == 3 ? GL_RGB : GL_RGBA;
+        glTexImage2D(iter.first, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        stbi_image_free(data);
+    }
+    // 多级纹理
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    // uv 超过后如何采样
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    return texture_id;
+}
+
 float cubeVertices[] = {
         // positions          // texture Coords
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-        0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
+        0.5f, -0.5f, -0.5f, 1.0f, 0.0f,
+        0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
+        0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
+        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
 
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
+        0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
+        -0.5f, 0.5f, 0.5f, 0.0f, 1.0f,
+        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
 
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
+        -0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
+        -0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
 
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
+        0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
+        0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+        0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
 
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f, 1.0f, 1.0f,
+        0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
+        0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
+        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
 
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f,
+        0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
+        -0.5f, 0.5f, 0.5f, 0.0f, 0.0f,
+        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f
+};
+
+
+float skybox_vertices[] = {
+        // positions
+        -1.0f, 1.0f, -1.0f,
+        -1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+        1.0f, 1.0f, -1.0f,
+        -1.0f, 1.0f, -1.0f,
+
+        -1.0f, -1.0f, 1.0f,
+        -1.0f, -1.0f, -1.0f,
+        -1.0f, 1.0f, -1.0f,
+        -1.0f, 1.0f, -1.0f,
+        -1.0f, 1.0f, 1.0f,
+        -1.0f, -1.0f, 1.0f,
+
+        1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f, 1.0f,
+        1.0f, 1.0f, 1.0f,
+        1.0f, 1.0f, 1.0f,
+        1.0f, 1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+
+        -1.0f, -1.0f, 1.0f,
+        -1.0f, 1.0f, 1.0f,
+        1.0f, 1.0f, 1.0f,
+        1.0f, 1.0f, 1.0f,
+        1.0f, -1.0f, 1.0f,
+        -1.0f, -1.0f, 1.0f,
+
+        -1.0f, 1.0f, -1.0f,
+        1.0f, 1.0f, -1.0f,
+        1.0f, 1.0f, 1.0f,
+        1.0f, 1.0f, 1.0f,
+        -1.0f, 1.0f, 1.0f,
+        -1.0f, 1.0f, -1.0f,
+
+        -1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f, 1.0f,
+        1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f, 1.0f,
+        1.0f, -1.0f, 1.0f
 };
 
 
 float planeVertices[] = {
-        5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
-        -5.0f, -0.5f,  5.0f,  0.0f, 0.0f,
-        -5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
+        5.0f, -0.5f, 5.0f, 2.0f, 0.0f,
+        -5.0f, -0.5f, 5.0f, 0.0f, 0.0f,
+        -5.0f, -0.5f, -5.0f, 0.0f, 2.0f,
 
-        5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
-        -5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
-        5.0f, -0.5f, -5.0f,  2.0f, 2.0f
+        5.0f, -0.5f, 5.0f, 2.0f, 0.0f,
+        -5.0f, -0.5f, -5.0f, 0.0f, 2.0f,
+        5.0f, -0.5f, -5.0f, 2.0f, 2.0f
 };
 
 
@@ -147,14 +251,29 @@ unsigned int init_cube() {
     glBindBuffer(GL_ARRAY_BUFFER, cube_VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), &cubeVertices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)nullptr);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *) nullptr);
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *) (3 * sizeof(float)));
 
     glBindVertexArray(0);
     return cube_VAO;
 }
 
+
+unsigned int init_skybox() {
+    unsigned int sky_VAO, sky_VBO;
+    glGenVertexArrays(1, &sky_VAO);
+    glGenBuffers(1, &sky_VBO);
+    glBindVertexArray(sky_VAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, sky_VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skybox_vertices), &skybox_vertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *) nullptr);
+
+    glBindVertexArray(0);
+    return sky_VAO;
+}
 
 unsigned int init_plane() {
     // plane VAO
@@ -166,9 +285,9 @@ unsigned int init_plane() {
     glBindBuffer(GL_ARRAY_BUFFER, plane_VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), &planeVertices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)nullptr);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *) nullptr);
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *) (3 * sizeof(float)));
 
     glBindVertexArray(0);
     return plane_VAO;
