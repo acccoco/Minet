@@ -22,6 +22,8 @@ unsigned int cubemap_gen();
 
 unsigned int init_box_normal();
 
+unsigned int uniform_block_get();
+
 int main() {
     /* 初始化 */
     logger_init();
@@ -43,6 +45,19 @@ int main() {
     auto diffuse_shader = Shader(SHADER("diffuse.vert"), SHADER("diffuse.frag"));
     auto skybox_shader = Shader(SHADER("sky.vert"), SHADER("sky.frag"));
     auto reflect_shader = Shader(SHADER("reflect.vert"), SHADER("reflect.frag"));
+    GLuint uniform_block_diffuse = glGetUniformBlockIndex(diffuse_shader.id, "Matrices");
+    GLuint uniform_block_skybox = glGetUniformBlockIndex(skybox_shader.id, "Matrices");
+    GLuint uniform_block_reflect = glGetUniformBlockIndex(reflect_shader.id, "Matrices");
+    glUniformBlockBinding(diffuse_shader.id, uniform_block_diffuse, 0);
+    glUniformBlockBinding(skybox_shader.id, uniform_block_skybox, 0);
+    glUniformBlockBinding(reflect_shader.id, uniform_block_reflect, 0);
+
+    // 创建 uniform block buffer
+    GLuint ubo_matrices = uniform_block_get();
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo_matrices);
+    glBindBuffer(GL_UNIFORM_BUFFER, ubo_matrices);
+    glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(camera->projection_matrix_get()));
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     // 纹理
     auto lava_diffuse = Texture2D(TEXTURE("lava/diffuse.tga"));
@@ -58,15 +73,9 @@ int main() {
         camera->update();
 
         // 着色器的基本属性
-        diffuse_shader.use();
-        diffuse_shader.uniform_mat4_set("view", camera->view_matrix_get());
-        diffuse_shader.uniform_mat4_set("projection", camera->projection_matrix_get());
-        skybox_shader.use();
-        skybox_shader.uniform_mat4_set("view", glm::mat4(glm::mat3(camera->view_matrix_get())));
-        skybox_shader.uniform_mat4_set("projection", camera->projection_matrix_get());
-        reflect_shader.use();
-        reflect_shader.uniform_mat4_set("view", camera->view_matrix_get());
-        reflect_shader.uniform_mat4_set("projection", camera->projection_matrix_get());
+        glBindBuffer(GL_UNIFORM_BUFFER, ubo_matrices);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(camera->view_matrix_get()));
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
         // 地面
         diffuse_shader.use();
@@ -120,6 +129,17 @@ int main() {
     glfwTerminate();
 }
 
+
+unsigned int uniform_block_get() {
+    unsigned int ubo_matrices;
+    glGenBuffers(1, &ubo_matrices);
+
+    glBindBuffer(GL_UNIFORM_BUFFER, ubo_matrices);
+    glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), nullptr, GL_STATIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    return ubo_matrices;
+}
 
 unsigned int cubemap_gen() {
     unsigned int texture_id;
