@@ -35,6 +35,8 @@ public:
 
     Shader(const std::string &vertex, const std::string &fragment);
 
+    Shader(const std::string &vertex, const std::string &geometry, const std::string &fragment);
+
     void uniform_vec4_set(const std::string &name, const glm::vec4 &v);
 
     void uniform_float_set(const std::string &name, GLfloat value);
@@ -57,7 +59,8 @@ protected:
     std::map<std::string, GLint> uniform_location_map;
 
     static GLuint shader_prog_get(const std::string &vert_shader_file,
-                                  const std::string &frag_shader_file);
+                                  const std::string &frag_shader_file,
+                                  const std::string &geom_shader_file="");
 
     static GLuint shader_compile(const std::string &file_name, GLenum shader_type);
 

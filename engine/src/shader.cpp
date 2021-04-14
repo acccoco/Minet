@@ -12,7 +12,6 @@
 const int LOG_INFO_LEN = 512;
 
 
-
 const GLuint ShaderLocation::position = 0;
 const GLuint ShaderLocation::normal = 1;
 const GLuint ShaderLocation::texcoord = 2;
@@ -42,7 +41,9 @@ GLint Shader::unifrom_location_get(const std::string &name) {
     return iter->second;
 }
 
-GLuint Shader::shader_prog_get(const std::string &vert_shader_file, const std::string &frag_shader_file) {
+GLuint Shader::shader_prog_get(const std::string &vert_shader_file,
+                               const std::string &frag_shader_file,
+                               const std::string &geom_shader_file) {
     // 编译着色器
     unsigned int vertex_shader = Shader::shader_compile(vert_shader_file, GL_VERTEX_SHADER);
     unsigned int fragment_shader = Shader::shader_compile(frag_shader_file, GL_FRAGMENT_SHADER);
@@ -52,6 +53,12 @@ GLuint Shader::shader_prog_get(const std::string &vert_shader_file, const std::s
     unsigned int shader_program = glCreateProgram();
     glAttachShader(shader_program, vertex_shader);
     glAttachShader(shader_program, fragment_shader);
+
+    if (!geom_shader_file.empty()) {
+        unsigned int geometry_shader = Shader::shader_compile(geom_shader_file, GL_GEOMETRY_SHADER);
+        glAttachShader(shader_program, geometry_shader);
+    }
+
     glLinkProgram(shader_program);
 
     // 删除着色器对象
@@ -77,7 +84,8 @@ Shader::Shader(const std::string &vertex, const std::string &fragment) {
 
 
 GLuint Shader::shader_compile(const std::string &file_name, GLenum shader_type) {
-    assert(shader_type == GL_VERTEX_SHADER || shader_type == GL_FRAGMENT_SHADER);
+    assert(shader_type == GL_VERTEX_SHADER || shader_type == GL_FRAGMENT_SHADER
+           || shader_type == GL_GEOMETRY_SHADER);
 
     // 读文件
     std::string shader_source = File::str_load(file_name);
@@ -129,6 +137,10 @@ void Shader::uniform_mat4_set(const std::string &name, const glm::mat4 &m) {
 void Shader::uniform_tex2d_set(const std::string &name, GLuint texture_unit) {
     glUseProgram(this->id);
     glUniform1f(unifrom_location_get(name), texture_unit);
+}
+
+Shader::Shader(const std::string &vertex, const std::string &geometry, const std::string &fragment) {
+    this->id = this->shader_prog_get(vertex, fragment, geometry);
 }
 
 void ShaderExtLight::set(Shader &shader, const SpotLight &light, const std::string &name) {

@@ -45,12 +45,15 @@ int main() {
     auto diffuse_shader = Shader(SHADER("diffuse.vert"), SHADER("diffuse.frag"));
     auto skybox_shader = Shader(SHADER("sky.vert"), SHADER("sky.frag"));
     auto reflect_shader = Shader(SHADER("reflect.vert"), SHADER("reflect.frag"));
+    auto normal_shader = Shader(SHADER("normal.vert"), SHADER("normal.geom"), SHADER("normal.frag"));
     GLuint uniform_block_diffuse = glGetUniformBlockIndex(diffuse_shader.id, "Matrices");
     GLuint uniform_block_skybox = glGetUniformBlockIndex(skybox_shader.id, "Matrices");
     GLuint uniform_block_reflect = glGetUniformBlockIndex(reflect_shader.id, "Matrices");
+    GLuint uniform_block_normal = glGetUniformBlockIndex(normal_shader.id, "Matrices");
     glUniformBlockBinding(diffuse_shader.id, uniform_block_diffuse, 0);
     glUniformBlockBinding(skybox_shader.id, uniform_block_skybox, 0);
     glUniformBlockBinding(reflect_shader.id, uniform_block_reflect, 0);
+    glUniformBlockBinding(normal_shader.id, uniform_block_normal, 0);
 
     // 创建 uniform block buffer
     GLuint ubo_matrices = uniform_block_get();
@@ -108,6 +111,13 @@ int main() {
         glm::mat4 model_box = glm::translate(glm::one<glm::mat4>(), glm::vec3(-1.f, 1.f, 1.f));
         reflect_shader.uniform_mat4_set("model", model_box);
         reflect_shader.uniform_vec3_set("eye_pos", camera->position_get());
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glBindVertexArray(0);
+
+        // 绘制法线效果
+        normal_shader.use();
+        glBindVertexArray(box_normal);
+        normal_shader.uniform_mat4_set("model", model_box);
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
 
