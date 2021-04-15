@@ -23,7 +23,7 @@ private:
     void _init() override {
         this->camera = std::make_shared<Camera>();
 
-        this->model_nano = ModelBuilder::build(ASSETS("nanosuit/nanosuit.obj"));
+        this->model_nano = ModelBuilder::build(MODEL("nanosuit/nanosuit.obj"));
         this->tex_shader = std::make_shared<Shader>(SHADER("tex.vert"), SHADER("tex.frag"));
     }
 

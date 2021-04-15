@@ -23,6 +23,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb")
+set(THREADS_PREFER_PTHREAD_FLAG ON)
 
 
 # 找到 pkg
@@ -31,6 +32,7 @@ find_package(glm REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(assimp REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(Threads REQUIRED)
 
 
 # 链接库
@@ -39,7 +41,8 @@ list(APPEND LINKS
         glfw3
         spdlog::spdlog
         assimp
-        ${OPENGL_LIBRARIES})
+        ${OPENGL_LIBRARIES}
+        Threads::Threads)
 
 
 # 头文件

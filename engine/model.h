@@ -21,9 +21,11 @@ public:
     friend class ModelBuilder;
 
     Model() = default;
-    Model(const glm::vec3 &pos);
+    explicit Model(const glm::vec3 &pos);
 
     glm::mat4 model_matrix_get();
+
+    std::vector<GLuint> VAOs_get();
 
     // 改变位姿
     void move(const glm::vec3 &trans);
@@ -33,12 +35,12 @@ public:
      * 绘制 model
      * 会更新 model 矩阵，设置 texture 等
      */
-    void draw(const std::shared_ptr<Shader> &shader);
+    void draw(const std::shared_ptr<Shader> &shader, GLsizei amount = 1);
 
 protected:
     std::vector<Mesh> meshes;
     glm::mat4 model = glm::one<glm::mat4>();            // model 矩阵
-    glm::vec3 pos;                          // Model 的位置
+    glm::vec3 pos{};                          // Model 的位置
 };
 
 
@@ -50,6 +52,5 @@ public:
 private:
     static void process_node(Model &model, const aiNode &node, const aiScene &scene, const std::string &dir);
 };
-
 
 #endif //RENDER_MODEL_H

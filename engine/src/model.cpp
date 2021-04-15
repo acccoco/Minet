@@ -12,16 +12,25 @@ glm::mat4 Model::model_matrix_get() {
     return this->model;
 }
 
-void Model::draw(const std::shared_ptr<Shader> &shader) {
+void Model::draw(const std::shared_ptr<Shader> &shader, GLsizei amount) {
     shader->use();
 
     // 更新 model 矩阵
-    shader->uniform_mat4_set(ShaderMatrixName::model, this->model);
+    if (amount == 1)
+        shader->uniform_mat4_set(ShaderMatrixName::model, this->model);
 
     // 绘制所有的 mesh
     for (auto &mesh : this->meshes) {
-        mesh.draw(shader);
+        mesh.draw(shader, amount);
     }
+}
+
+std::vector<GLuint> Model::VAOs_get() {
+    std::vector<GLuint> res;
+    for (const auto &mesh: meshes) {
+        res.push_back(mesh.VAO_get());
+    }
+    return res;
 }
 
 void Model::move(const glm::vec3 &trans) {

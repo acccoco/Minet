@@ -7,7 +7,7 @@ Mesh::Mesh(std::vector<Vertex> vertices, std::vector<Face> &faces,
     this->geometry_init();
 }
 
-void Mesh::draw(const std::shared_ptr<Shader> &shader) {
+void Mesh::draw(const std::shared_ptr<Shader> &shader, GLsizei amount) {
 
     // 为 shader 设置 texture
     GLuint unit = 0;
@@ -17,7 +17,10 @@ void Mesh::draw(const std::shared_ptr<Shader> &shader) {
 
     // 绘制三角形
     glBindVertexArray(this->VAO);
-    glDrawElements(GL_TRIANGLES, this->faces.size() * 3, GL_UNSIGNED_INT, nullptr);
+    if (amount == 1)
+        glDrawElements(GL_TRIANGLES, this->faces.size() * 3, GL_UNSIGNED_INT, nullptr);
+    else
+        glDrawElementsInstanced(GL_TRIANGLES, this->faces.size() * 3, GL_UNSIGNED_INT, nullptr, amount);
     glad_glBindVertexArray(0);
 }
 
@@ -37,18 +40,18 @@ void Mesh::geometry_init() {
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->faces.size() * sizeof(Face), &this->faces[0], GL_STATIC_DRAW);
 
     // VAO 顶点属性：position
-    glEnableVertexAttribArray(ShaderLocation::position);
-    glVertexAttribPointer(ShaderLocation::position, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+    glEnableVertexAttribArray(VertAttribLocation::position);
+    glVertexAttribPointer(VertAttribLocation::position, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                           (void *) offsetof(Vertex, positon));
 
     // VAO 顶点属性：normal
-    glEnableVertexAttribArray(ShaderLocation::normal);
-    glVertexAttribPointer(ShaderLocation::normal, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+    glEnableVertexAttribArray(VertAttribLocation::normal);
+    glVertexAttribPointer(VertAttribLocation::normal, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                           (void *) offsetof(Vertex, normal));
 
     // VAO 顶点属性：texcoord
-    glEnableVertexAttribArray(ShaderLocation::texcoord);
-    glVertexAttribPointer(ShaderLocation::texcoord, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+    glEnableVertexAttribArray(VertAttribLocation::texcoord);
+    glVertexAttribPointer(VertAttribLocation::texcoord, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                           (void *) offsetof(Vertex, texcoord));
 
     // 取消绑定 VAO
@@ -66,6 +69,10 @@ void Mesh::texture_transmit(const std::shared_ptr<Shader> &shader, TextureType t
         shader->uniform_tex2d_set(ShaderTextureName::get(type, i), unit);
         ++unit;
     }
+}
+
+GLuint Mesh::VAO_get() const {
+    return this->VAO;
 }
 
 

@@ -15,7 +15,7 @@
 #include "light.h"
 
 
-struct ShaderLocation {
+struct VertAttribLocation {
     static const GLuint position;
     static const GLuint normal;
     static const GLuint texcoord;
@@ -34,6 +34,8 @@ public:
     GLint id = 0;
 
     Shader(const std::string &vertex, const std::string &fragment);
+
+    void uniform_block(const std::string &name, GLuint index) const;
 
     void uniform_vec4_set(const std::string &name, const glm::vec4 &v);
 

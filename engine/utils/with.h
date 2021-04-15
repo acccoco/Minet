@@ -25,7 +25,7 @@ private:
     T &_obj;
 };
 
-#define with(T, obj) for(WithWrap<T> __with_##T##_##obj##__(obj); (__with_##T##_##obj##__).flag; (__with_##T##_##obj##__).flag = false)
+#define with(T, obj) for(WithWrap<T> __with_##T##__(obj); (__with_##T##__).flag; (__with_##T##__).flag = false)
 
 
 #endif //RENDER_WITH_H

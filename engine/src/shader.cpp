@@ -13,9 +13,9 @@ const int LOG_INFO_LEN = 512;
 
 
 
-const GLuint ShaderLocation::position = 0;
-const GLuint ShaderLocation::normal = 1;
-const GLuint ShaderLocation::texcoord = 2;
+const GLuint VertAttribLocation::position = 0;
+const GLuint VertAttribLocation::normal = 1;
+const GLuint VertAttribLocation::texcoord = 2;
 
 
 const std::string ShaderMatrixName::model = "model";
@@ -129,6 +129,11 @@ void Shader::uniform_mat4_set(const std::string &name, const glm::mat4 &m) {
 void Shader::uniform_tex2d_set(const std::string &name, GLuint texture_unit) {
     glUseProgram(this->id);
     glUniform1f(unifrom_location_get(name), texture_unit);
+}
+
+void Shader::uniform_block(const std::string &name, GLuint index) const {
+    GLuint uniform_block_location = glGetUniformBlockIndex(id, name.c_str());
+    glUniformBlockBinding(id, uniform_block_location, index);
 }
 
 void ShaderExtLight::set(Shader &shader, const SpotLight &light, const std::string &name) {

@@ -19,8 +19,8 @@
 /* 顶点：坐标，法线，纹理坐标 */
 class Vertex {
 public:
-    glm::vec3 positon;
-    glm::vec3 normal;
+    glm::vec3 positon{};
+    glm::vec3 normal{};
     glm::vec2 texcoord = glm::vec2(0.f, 0.f);
 
     Vertex() = default;
@@ -48,6 +48,7 @@ public:
     unsigned int c;
 
     Face() = default;
+
     Face(unsigned int a, unsigned int b, unsigned int c) : a(a), b(b), c(c) {}
 };
 
@@ -71,11 +72,13 @@ public:
     Mesh(std::vector<Vertex> vertices, std::vector<Face> &faces,
          std::map<TextureType, std::vector<std::shared_ptr<Texture2D>>> textures);
 
+    GLuint VAO_get() const;
+
     /* 初始化 Mesh 的各种几何属性，如 VAO，VBO */
     void geometry_init();
 
     /* 通过 shader，将该 mesh 绘制出来 */
-    void draw(const std::shared_ptr<Shader> &shader);
+    void draw(const std::shared_ptr<Shader> &shader, GLsizei amount = 1);
 
 private:
     GLuint VAO{}, VBO{}, EBO{};

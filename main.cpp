@@ -1,21 +1,15 @@
 
 #include <vector>
-
 #include <glad/glad.h>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
-
 #include "./engine/core.h"
 #include "./engine/scene.h"
-
-#include "./scene/myscene.h"
-#include "./scene/scene2.h"
+#include "./scene/scene_light.h"
+#include "./scene/scene_simple.h"
 #include "./scene/scene_nano.h"
-
-
-const unsigned int WINDOW_WIDTH = 1600;
-const unsigned int WINDOW_HEIGHT = 1200;
+#include "./scene/scene_space.h"
 
 
 int main() {
@@ -27,7 +21,7 @@ int main() {
     init_glad();
 
     // 场景初始化
-    Scene2 scene;
+    SceneSpace scene;
     scene.init();
 
     glEnable(GL_DEPTH_TEST);
