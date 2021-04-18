@@ -10,6 +10,7 @@
 #include "./scene/scene_simple.h"
 #include "./scene/scene_nano.h"
 #include "./scene/scene_space.h"
+#include "./scene/scene_box_floor.h"
 
 
 int main() {
@@ -21,7 +22,7 @@ int main() {
     init_glad();
 
     // 场景初始化
-    SceneSpace scene;
+    SceneBoxFloor scene;
     scene.init();
 
     glEnable(GL_DEPTH_TEST);

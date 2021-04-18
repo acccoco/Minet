@@ -136,6 +136,14 @@ void Shader::uniform_block(const std::string &name, GLuint index) const {
     glUniformBlockBinding(id, uniform_block_location, index);
 }
 
+void Shader::in() {
+    glUseProgram(this->id);
+}
+
+void Shader::out() {
+    glUseProgram(0);
+}
+
 void ShaderExtLight::set(Shader &shader, const SpotLight &light, const std::string &name) {
     shader.uniform_vec3_set(name + ".position", light.position);
     shader.uniform_vec3_set(name + ".direction", light.direction);

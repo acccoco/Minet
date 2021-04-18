@@ -18,6 +18,10 @@ public:
     static glm::vec3 indian_red1;
     static glm::vec3 deep_sky_blue2;
     static glm::vec3 gray41;
+
+    static glm::vec3 color(uint8_t r, uint8_t g, uint8_t b) {
+        return glm::vec3(r/256.f, g/256.f, b/256.f);
+    }
 };
 
 #endif //RENDER_COLOR_H

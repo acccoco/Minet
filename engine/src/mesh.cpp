@@ -75,7 +75,6 @@ GLuint Mesh::VAO_get() const {
     return this->VAO;
 }
 
-
 Face FaceBuilder::build(const aiFace &face) {
     assert(face.mNumIndices == 3);
 
@@ -143,4 +142,36 @@ Mesh MeshBuilder::build(const aiMesh &mesh, const aiScene &scene, const std::str
     textures = Texture2DBuilder::build(dir, mesh, scene);
 
     return Mesh(vertices, faces, textures);
+}
+
+PNTMesh::PNTMesh(const std::vector<float> &vertices)  {
+    assert(vertices.size() % (3 + 3 + 2) == 0);
+    vertex_cnt = vertices.size() / (3 + 3 + 2);
+
+    glGenVertexArrays(1, &VAO);
+    glBindVertexArray(VAO);
+
+    GLuint VBO;
+    glGenBuffers(1, &VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices[0], GL_STATIC_DRAW);
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*) nullptr);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void PNTMesh::in() {
+    glBindVertexArray(VAO);
+}
+
+void PNTMesh::out() {
+    glBindVertexArray(0);
 }

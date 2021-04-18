@@ -12,6 +12,7 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
+#include "./utils/with.h"
 #include "./shader.h"
 #include "./texture.h"
 
@@ -88,6 +89,19 @@ private:
      * @param unit 纹理单元开始的编号
      */
     void texture_transmit(const std::shared_ptr<Shader> &shader, TextureType type, GLuint &unit);
+};
+
+
+class PNTMesh : public With {
+public:
+    unsigned int vertex_cnt{};
+    GLuint VAO{};
+
+    explicit PNTMesh(const std::vector<float> &vertices);
+
+    void in() override;
+
+    void out() override;
 };
 
 

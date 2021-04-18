@@ -11,6 +11,7 @@
 #include <spdlog/spdlog.h>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "./utils/with.h"
 #include "texture.h"
 #include "light.h"
 
@@ -29,7 +30,7 @@ struct ShaderMatrixName {
 };
 
 
-class Shader {
+class Shader : public With {
 public:
     GLint id = 0;
 
@@ -48,6 +49,10 @@ public:
     void uniform_tex2d_set(const std::string &name, GLuint texture_unit);
 
     void use() const;
+
+    void in() override;
+
+    void out() override;
 
 protected:
 

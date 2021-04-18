@@ -33,7 +33,7 @@ public:
 // 点光源：有颜色，有位置，会随着距离衰减
 class PointLight : public Light {
 public:
-    glm::vec3 position;      // 光源的位置
+    glm::vec3 position{};      // 光源的位置
     AttenuationDistance attenuation{};
 
     PointLight(const glm::vec3 &ambient, const glm::vec3 &diffuse, const glm::vec3 &specular)
@@ -47,7 +47,7 @@ public:
  */
 class DirLight : public Light {
 public:
-    glm::vec3 direction;
+    glm::vec3 direction{};
 
     DirLight(const glm::vec3 &ambient, const glm::vec3 &diffuse, const glm::vec3 &specular)
             : Light(ambient, diffuse, specular) {}
@@ -59,13 +59,13 @@ public:
  */
 class SpotLight : public Light {
 public:
-    glm::vec3 position;
-    glm::vec3 direction;
+    glm::vec3 position{};
+    glm::vec3 direction{};
 
-    float inner_cutoff;         // 内切光角
-    float outer_cutoff;         // 外切光角
+    float inner_cutoff{};         // 内切光角
+    float outer_cutoff{};         // 外切光角
 
-    AttenuationDistance attenuation;
+    AttenuationDistance attenuation{};
 
     SpotLight(const glm::vec3 &ambient, const glm::vec3 &diffuse, const glm::vec3 &specular)
             : Light(ambient, diffuse, specular) {}
