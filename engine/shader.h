@@ -42,6 +42,8 @@ public:
 
     void uniform_float_set(const std::string &name, GLfloat value);
 
+    void uniform_int_set(const std::string &name, GLint value);
+
     void uniform_vec3_set(const std::string &name, const glm::vec3 &v);
 
     void uniform_mat4_set(const std::string &name, const glm::mat4 &m);

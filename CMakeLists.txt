@@ -15,6 +15,7 @@ project(render)
 # 源代码：
 # glad
 # stb_image
+# imgui
 # =============================================================================
 
 
@@ -42,7 +43,9 @@ list(APPEND LINKS
         spdlog::spdlog
         assimp
         ${OPENGL_LIBRARIES}
-        Threads::Threads)
+        Threads::Threads
+        # imgui 需要的
+        imm32 dwmapi)
 
 
 # 头文件
@@ -50,6 +53,7 @@ include_directories(C:/msys64/mingw64/include)
 include_directories(
         lib/glad/include
         lib/stb_image/include
+        lib/imgui
 )
 
 
@@ -57,7 +61,16 @@ include_directories(
 set(ALL_SRC)
 list(APPEND ALL_SRC
         lib/glad/src/glad.c
+
         lib/stb_image/src/stb_image.cpp
+
+        lib/imgui/imgui.cpp
+        lib/imgui/imgui_draw.cpp
+        lib/imgui/imgui_tables.cpp
+        lib/imgui/imgui_widgets.cpp
+        lib/imgui/backends/imgui_impl_glfw.cpp
+        lib/imgui/backends/imgui_impl_opengl3.cpp
+        lib/imgui/imgui_demo.cpp
         )
 
 

@@ -116,6 +116,11 @@ void Shader::uniform_float_set(const std::string &name, float value) {
     glUniform1f(unifrom_location_get(name), value);
 }
 
+void Shader::uniform_int_set(const std::string &name, GLint value) {
+    glUseProgram(this->id);
+    glUniform1i(unifrom_location_get(name), value);
+}
+
 void Shader::uniform_vec3_set(const std::string &name, const glm::vec3 &v) {
     glUseProgram(this->id);
     glUniform3f(unifrom_location_get(name), v.x, v.y, v.z);

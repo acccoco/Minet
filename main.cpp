@@ -14,12 +14,13 @@
 
 
 int main() {
-    /* 初始化 */
+    /* 配套环境初始化 */
     logger_init();
     glfw_init();
     Window::init();
-    Window::use();
+    glfwMakeContextCurrent(Window::window);
     init_glad();
+    imgui_init();
 
     // 场景初始化
     SceneBoxFloor scene;
@@ -32,11 +33,14 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         Window::update();
-
         scene.update();
 
         glfwSwapBuffers(Window::window);
         glfwPollEvents();
     }
+
+    imgui_terminate();
+
+    glfwDestroyWindow(Window::window);
     glfwTerminate();
 }

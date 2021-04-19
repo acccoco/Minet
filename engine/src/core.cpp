@@ -3,8 +3,12 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
 
 #include "../core.h"
+#include "../window.h"
 
 
 void init_glad() {
@@ -41,4 +45,23 @@ void logger_init() {
      * %-4!<flag> 表示左对齐，4位，超出截断
      */
     spdlog::set_pattern("[%H:%M:%S][%^%L%$][%15!s:%-3!#][%!] %v");
+}
+
+
+void imgui_init() {
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO &io = ImGui::GetIO();
+    (void) io;
+    ImGui::StyleColorsLight();
+
+    ImGui_ImplGlfw_InitForOpenGL(Window::window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
+}
+
+
+void imgui_terminate() {
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 }

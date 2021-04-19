@@ -16,6 +16,8 @@ void glfw_init();
 /* 初始化日志的格式等 */
 void logger_init();
 
+void imgui_init();
 
+void imgui_terminate();
 
 #endif //RENDER_INIT_H

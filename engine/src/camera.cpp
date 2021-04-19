@@ -2,6 +2,7 @@
 
 #include "../camera.h"
 #include "../window.h"
+#include "../utils/common.h"
 
 
 glm::mat4 Camera::view_matrix_get() {
@@ -27,10 +28,13 @@ void Camera::translate(TransDirection direction, float distance) {
     // 当前摄像机的右边是哪个方向
     glm::vec3 cur_right = glm::normalize(glm::cross(this->front, UP));
 
+    // 摄像机的前方，平行于地面的
+    glm::vec3 ahead = glm::normalize(glm::cross(UP, cur_right));
+
     // 摄像机的相对方向在世界坐标系下的向量表示
     std::map<TransDirection, glm::vec3> dir_map{
-            {TransDirection::front, this->front},
-            {TransDirection::back,  -this->front},
+            {TransDirection::front, ahead},
+            {TransDirection::back,  -ahead},
             {TransDirection::up,    UP},
             {TransDirection::down,  -UP},
             {TransDirection::left,  -cur_right},
@@ -91,7 +95,11 @@ void Camera::do_translate() {
 }
 
 void Camera::do_rotate() {
-    // 获取全局窗口对象的鼠标位置，更新摄像机姿态
+    // 没有按下鼠标左键，不旋转摄像机
+    if (!vector_find(Window::mouse_button_events, MouseButtonEvent::press_Left)) {
+        fist_rotate = true;
+        return;
+    }
 
     /**
      * 轮询方式的弊端：
