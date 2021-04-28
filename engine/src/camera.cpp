@@ -95,11 +95,17 @@ void Camera::do_translate() {
 }
 
 void Camera::do_rotate() {
-    // 没有按下鼠标左键，不旋转摄像机
-    if (!vector_find(Window::mouse_button_events, MouseButtonEvent::press_Left)) {
+    // 按下鼠标右键，旋转摄像机
+    if (!vector_find(Window::mouse_button_events, MouseButtonEvent::press_Right)) {
         fist_rotate = true;
         return;
     }
+    // 按下 Alt 才可以旋转摄像机
+//    if (!vector_find(Window::key_events, KeyboardEvent::press_LAlt)) {
+//        fist_rotate = true;
+//        return;
+//    }
+
 
     /**
      * 轮询方式的弊端：
