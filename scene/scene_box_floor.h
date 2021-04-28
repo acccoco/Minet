@@ -11,6 +11,7 @@
 #include "../engine/color.h"
 #include "../engine/camera.h"
 #include "../engine/model.h"
+#include "../engine/frame_buffer.h"
 #include "../engine/shader.h"
 #include "../engine/texture.h"
 #include "../engine/utils/with.h"
@@ -75,7 +76,7 @@ public:
             // 光照模型
             shader_blinn->uniform_int_set("blinn_phong", blinn_phong);
 
-            // 光源颜色
+            // 光源属性
             shader_blinn->uniform_vec3_set("plight0.pos", light_pos);
             shader_blinn->uniform_vec3_set("plight0.color", light_color);
 
