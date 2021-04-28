@@ -4,6 +4,8 @@ in vec3 FragPos;
 in vec3 Normal;
 in vec2 TexCoord;
 
+out vec4 FragColor;
+
 struct Material {
     float alpha;
     float metalness;
@@ -18,8 +20,11 @@ struct PointLight {
 
 #define PointLightCnt 4
 uniform PointLight lights[PointLightCnt];
-uniform Material material;
 uniform vec3 eye_pos;
+
+uniform sampler2D texture_albedo;
+uniform sampler2D texture_metalness;
+uniform sampler2D texture_alpha;
 
 const float PI = 3.14159265359;
 
@@ -80,6 +85,12 @@ void main() {
 
     vec3 Lo = vec3(0.0);
 
+    Material material;
+    material.ao = 1.0;
+    material.alpha = texture(texture_alpha, TexCoord).r;
+    material.albedo = pow(texture(texture_albedo, TexCoord).rgb, vec3(2.2));
+    material.metalness = texture(texture_metalness, TexCoord).r;
+
     // 遍历每个点光源，计算漫反射光照（Lambert 模型）和高光（Cook Torrance 模型）
     for (int i = 0; i < PointLightCnt; ++i) {
         vec3 L = normalize(FragPos - lights[i].position);
@@ -105,5 +116,5 @@ void main() {
     // Gamma 校正
     color = pow(color, vec3(1.0/2.2));
 
-    gl_FragColor = vec4(color, 1.0);
+    FragColor = vec4(color, 1.0);
 }
