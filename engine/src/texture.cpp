@@ -58,6 +58,58 @@ unsigned char *Texture2D::load_file(std::string &file_path) {
     return data;
 }
 
+unsigned int Texture2D::hdr_load(const std::string &path) {
+    int width, height, nr_components;
+    unsigned int hdr_texture;
+
+    // 载入文件
+    stbi_set_flip_vertically_on_load(true);
+    float *data = stbi_loadf(path.c_str(), &width, &height, &nr_components, 0);
+    if (!data) {
+        SPDLOG_ERROR("fail to load hdr texture from file: {}", path);
+        throw std::exception();
+    }
+
+    // 创建材质对象
+    hdr_texture = hdr_texture_create(width, height, data);
+
+    stbi_image_free(data);
+    return hdr_texture;
+}
+
+unsigned int Texture2D::hdr_texture_create(int width, int height, float *data) {
+    unsigned int hdr_texture;
+
+    glGenTextures(1, &hdr_texture);
+    glBindTexture(GL_TEXTURE_2D, hdr_texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, data);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    return hdr_texture;
+}
+
+unsigned int Texture2D::cubemap_texture_create(unsigned int width) {
+    unsigned int cube_map;
+
+    glGenTextures(1, &cube_map);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, cube_map);
+    /* 顺序依次是：+x, -x, +y, -y, +z, -z */
+    for (unsigned int i = 0; i < 6; ++i) {
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, width, width, 0, GL_RGB, GL_FLOAT, nullptr);
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    return cube_map;
+}
+
 std::map<TextureType, std::vector<std::shared_ptr<Texture2D>>>
 Texture2DBuilder::build(const std::string &dir, const aiMesh &mesh, const aiScene &scene) {
     std::map<TextureType, std::vector<std::shared_ptr<Texture2D>>> textures;

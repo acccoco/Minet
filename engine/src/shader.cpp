@@ -133,7 +133,7 @@ void Shader::uniform_mat4_set(const std::string &name, const glm::mat4 &m) {
 
 void Shader::uniform_tex2d_set(const std::string &name, GLuint texture_unit) {
     glUseProgram(this->id);
-    glUniform1f(unifrom_location_get(name), texture_unit);
+    glUniform1i(unifrom_location_get(name), texture_unit);
 }
 
 void Shader::uniform_block(const std::string &name, GLuint index) const {

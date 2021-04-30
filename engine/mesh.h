@@ -102,6 +102,8 @@ public:
     void in() override;
 
     void out() override;
+
+    void draw() const;
 };
 
 

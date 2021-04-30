@@ -10,6 +10,8 @@ std::vector<KeyboardEvent> Window::key_events;
 std::vector<MouseButtonEvent> Window::mouse_button_events;
 bool Window::mouse_init = false;
 
+int Window::width = 1600;
+int Window::height = 1200;
 
 GLFWwindow *Window::window = nullptr;
 
@@ -38,7 +40,9 @@ void Window::update() {
 }
 
 void Window::frame_buffer_cbk(GLFWwindow *_window, int _width, int _height) {
-    glViewport(0, 0, _width, _height);
+    width = _width;
+    height = _height;
+    glViewport(0, 0, width, height);
 }
 
 Window::Window() noexcept {

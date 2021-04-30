@@ -16,10 +16,10 @@ struct PointLight {
     vec3 color;
 };
 
-#define PointLightCnt 4
-uniform PointLight lights[PointLightCnt];
+uniform PointLight light;
 uniform Material material;
 uniform vec3 eye_pos;
+uniform vec3 ambient;
 
 const float PI = 3.14159265359;
 
@@ -81,20 +81,19 @@ void main() {
     vec3 Lo = vec3(0.0);
 
     // 遍历每个点光源，计算漫反射光照（Lambert 模型）和高光（Cook Torrance 模型）
-    for (int i = 0; i < PointLightCnt; ++i) {
-        vec3 L = normalize(FragPos - lights[i].position);
-        float NdotL = max(0.0, dot(N, -L));
+    vec3 L = normalize(FragPos - light.position);
+    float NdotL = max(0.0, dot(N, -L));
 
-        // 随距离衰减
-        float distance = length(lights[i].position - eye_pos);
-        float attenuation = 1.0 / (distance * distance);
-        vec3 Li = lights[i].color * attenuation;
+    // 随距离衰减
+    float distance = length(light.position - eye_pos);
+    float attenuation = 1.0 / (distance * distance);
+    vec3 Li = light.color * attenuation;
 
-        Lo += BRDF_Cook_Torrance(N, V, L, material) * Li * NdotL;
-    }
+    Lo += BRDF_Cook_Torrance(N, V, L, material) * Li * NdotL;
+
 
     // 环境光
-    vec3 ambient = vec3(0.03) * material.albedo * material.ao;
+    vec3 ambient = ambient * material.albedo * material.ao;
 
     // 最终的颜色
     vec3 color = ambient + Lo;

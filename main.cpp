@@ -12,6 +12,7 @@
 #include "./scene/scene_space.h"
 #include "./scene/scene_box_floor.h"
 #include "./scene/scene_pbr_direct_light.h"
+#include "./scene/scene_pbr_ibl.h"
 
 
 int main() {
@@ -24,7 +25,7 @@ int main() {
     imgui_init();
 
     // 场景初始化
-    ScenePbrDirectLight scene;
+    ScenePbrIBL scene;
     scene.init();
 
     glEnable(GL_DEPTH_TEST);

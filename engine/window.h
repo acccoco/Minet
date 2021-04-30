@@ -35,6 +35,9 @@ enum class MouseButtonEvent {
 
 class Window {
 public:
+    static int width;
+    static int height;
+
     // 鼠标的坐标
     static double mouse_x, mouse_y;
     // 鼠标是否开始移动了
@@ -60,8 +63,6 @@ public:
 
 private:
     // 窗口的一些参数
-    const int width = 1600;
-    const int height = 1200;
     const std::string title = "AccRender";
 
     /* 创建窗口，注册回调函数，捕捉光标等 */

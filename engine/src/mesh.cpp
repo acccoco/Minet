@@ -175,3 +175,9 @@ void PNTMesh::in() {
 void PNTMesh::out() {
     glBindVertexArray(0);
 }
+
+void PNTMesh::draw() const {
+    glBindVertexArray(VAO);
+    glDrawArrays(GL_TRIANGLES, 0, vertex_cnt);
+    glBindVertexArray(0);
+}
