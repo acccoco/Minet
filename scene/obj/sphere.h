@@ -44,7 +44,7 @@ public:
                 float z = std::sin(theta) * std::sin(phi);
 
                 positions.emplace_back(x, y, z);
-                uvs.emplace_back(1 - j / x_slice, 1 - i / y_slice);
+                uvs.emplace_back(1 - float(j) / x_slice, 1 - float(i) / y_slice);
                 normals.emplace_back(x, y, z);
             }
         }
