@@ -25,7 +25,7 @@ int main() {
     imgui_init();
 
     // 场景初始化
-    ScenePbrDL scene;
+    ScenePbrIBL scene;
     scene.init();
 
     glEnable(GL_DEPTH_TEST);

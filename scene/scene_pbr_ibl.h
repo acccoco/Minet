@@ -30,7 +30,8 @@ public:
     void _init() override {
         camera = std::make_shared<Camera>();
 
-        shader_sky = std::make_shared<Shader>(SHADER("sky.vert"), SHADER("sky.frag"));
+        shader_sky = std::make_shared<Shader>(SHADER("sky.vert"), SHADER("sky.frag"),
+                                              std::vector<std::string>{"HDR_INPUT"});
         shader_ibl_ambient = std::make_shared<Shader>(SHADER("ibl_ambient.vert"), SHADER("ibl_ambient.frag"));
         shader_light = std::make_shared<Shader>(SHADER("light.vert"), SHADER("light.frag"));
 
@@ -70,7 +71,8 @@ public:
 
         // 绘制球体
         with(Shader, *shader_ibl_ambient) {
-            shader_ibl_ambient->uniform_mat4_set("model", glm::translate(glm::one<glm::mat4>(), glm::vec3(0.f, 0.f, -4.f)));
+            shader_ibl_ambient->uniform_mat4_set("model",
+                                                 glm::translate(glm::one<glm::mat4>(), glm::vec3(0.f, 0.f, -4.f)));
             shader_ibl_ambient->uniform_mat4_set("view", camera->view_matrix_get());
             shader_ibl_ambient->uniform_mat4_set("projection", camera->projection_matrix_get());
             shader_ibl_ambient->uniform_vec3_set("eye_pos", camera->position_get());
