@@ -1,16 +1,12 @@
 
-#include "../shader.h"
-
 #include <cassert>
 #include <exception>
-
-
+#include "../shader.h"
 #include "../utils/file.h"
 
 
 // 全局变量 =======================================================================
 const int LOG_INFO_LEN = 512;
-
 
 
 const GLuint VertAttribLocation::position = 0;
@@ -42,45 +38,41 @@ GLint Shader::unifrom_location_get(const std::string &name) {
     return iter->second;
 }
 
-GLuint Shader::shader_prog_get(const std::string &vert_shader_file, const std::string &frag_shader_file) {
-    // 编译着色器
-    unsigned int vertex_shader = Shader::shader_compile(vert_shader_file, GL_VERTEX_SHADER);
-    unsigned int fragment_shader = Shader::shader_compile(frag_shader_file, GL_FRAGMENT_SHADER);
 
-    // 链接着色器
-    SPDLOG_INFO("link shader");
-    unsigned int shader_program = glCreateProgram();
-    glAttachShader(shader_program, vertex_shader);
-    glAttachShader(shader_program, fragment_shader);
-    glLinkProgram(shader_program);
+Shader::Shader(const std::string &vertex, const std::string &fragment, const std::vector<std::string> &macros) {
+    GLuint id_vertex;
+    GLuint id_fragment;
 
-    // 删除着色器对象
-    glDeleteShader(vertex_shader);
-    glDeleteShader(fragment_shader);
+    /* 编译着色器 */
+    id_vertex = shader_compile(vertex, GL_VERTEX_SHADER, macros);
+    id_fragment = shader_compile(fragment, GL_FRAGMENT_SHADER, macros);
 
-    // 查看结果
-    int success;
-    char log_info[LOG_INFO_LEN];
-    glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(shader_program, LOG_INFO_LEN, nullptr, log_info);
-        SPDLOG_ERROR("link shader fail, info log: {}", log_info);
-        throw std::exception();
-    }
+    /* 链接着色器 */
+    this->id = shader_link(id_vertex, id_fragment);
 
-    return shader_program;
-}
-
-Shader::Shader(const std::string &vertex, const std::string &fragment) {
-    this->id = Shader::shader_prog_get(vertex, fragment);
+    /* 删除着色器对象 */
+    glDeleteShader(id_vertex);
+    glDeleteShader(id_fragment);
 }
 
 
-GLuint Shader::shader_compile(const std::string &file_name, GLenum shader_type) {
+GLuint
+Shader::shader_compile(const std::string &file_name, GLenum shader_type, const std::vector<std::string> &macros) {
     assert(shader_type == GL_VERTEX_SHADER || shader_type == GL_FRAGMENT_SHADER);
 
-    // 读文件
-    std::string shader_source = File::str_load(file_name);
+    /* 读文件 */
+    std::vector<std::string> lines = File::file_load_lines(file_name);
+    std::string shader_source;
+    for (const auto &line : lines) {
+        shader_source += line;
+
+        /* 在 #version 后面追加宏定义 */
+        if (line.find("#version") != std::string::npos) {
+            for (auto const &macro : macros) {
+                shader_source += "#define " + macro + "\n";
+            }
+        }
+    }
     const char *source = shader_source.c_str();
 
     // 编译
@@ -147,6 +139,27 @@ void Shader::in() {
 
 void Shader::out() {
     glUseProgram(0);
+}
+
+GLuint Shader::shader_link(GLuint vertex, GLuint fragment) {
+    // 链接着色器
+    SPDLOG_INFO("link shader");
+    unsigned int shader_program = glCreateProgram();
+    glAttachShader(shader_program, vertex);
+    glAttachShader(shader_program, fragment);
+    glLinkProgram(shader_program);
+
+    // 查看结果
+    int success;
+    char log_info[LOG_INFO_LEN];
+    glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
+    if (!success) {
+        glGetProgramInfoLog(shader_program, LOG_INFO_LEN, nullptr, log_info);
+        SPDLOG_ERROR("link shader fail, info log: {}", log_info);
+        throw std::exception();
+    }
+
+    return shader_program;
 }
 
 void ShaderExtLight::set(Shader &shader, const SpotLight &light, const std::string &name) {

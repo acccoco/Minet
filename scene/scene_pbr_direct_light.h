@@ -36,7 +36,8 @@ public:
         mesh_sphere = std::make_shared<Sphere>();
         mesh_box = std::make_shared<PNTMesh>(box_mesh);
 
-        pbr_shader = std::make_shared<Shader>(SHADER("pbr_direct_light.vert"), SHADER("pbr_direct_light.frag"));
+        pbr_shader = std::make_shared<Shader>(SHADER("pbr_direct_light.vert"), SHADER("pbr_direct_light.frag"),
+                                              std::vector<std::string>{});
         light_shader = std::make_shared<Shader>(SHADER("light.vert"), SHADER("light.frag"));
     }
 

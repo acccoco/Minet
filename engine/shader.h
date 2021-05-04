@@ -3,6 +3,7 @@
 
 #include <map>
 #include <memory>
+#include <vector>
 #include <string>
 #include <utility>
 #include <exception>
@@ -34,7 +35,7 @@ class Shader : public With {
 public:
     GLint id = 0;
 
-    Shader(const std::string &vertex, const std::string &fragment);
+    Shader(const std::string &vertex, const std::string &fragment, const std::vector<std::string> &macros = {});
 
     void uniform_block(const std::string &name, GLuint index) const;
 
@@ -65,10 +66,10 @@ protected:
      */
     std::map<std::string, GLint> uniform_location_map;
 
-    static GLuint shader_prog_get(const std::string &vert_shader_file,
-                                  const std::string &frag_shader_file);
+    static GLuint shader_link(GLuint vertex, GLuint fragment);
 
-    static GLuint shader_compile(const std::string &file_name, GLenum shader_type);
+    static GLuint
+    shader_compile(const std::string &file_name, GLenum shader_type, const std::vector<std::string> &macros);
 
     GLint unifrom_location_get(const std::string &name);
 };
@@ -84,7 +85,7 @@ private:
     static void set_light(Shader &shader, const Light &light, const std::string &name);
 
     /* 设置距离衰减系数 */
-    static void set_attenuation(Shader &shader, const AttenuationDistance& attenuation, const std::string &name);
+    static void set_attenuation(Shader &shader, const AttenuationDistance &attenuation, const std::string &name);
 
 public:
     static void set(Shader &shader, const PointLight &light, const std::string &name);
@@ -107,9 +108,15 @@ public:
     static std::string get(TextureType texture_type, GLuint index) {
         std::string type_str;
         switch (texture_type) {
-            case diffuse: type_str = "diffuse"; break;
-            case specular: type_str = "specular"; break;
-            case normal: type_str = "normal"; break;
+            case diffuse:
+                type_str = "diffuse";
+                break;
+            case specular:
+                type_str = "specular";
+                break;
+            case normal:
+                type_str = "normal";
+                break;
         }
 
         return "material.texture_" + type_str + "_" + std::to_string(index);

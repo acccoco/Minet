@@ -16,8 +16,30 @@ struct PointLight {
     vec3 color;
 };
 
-uniform PointLight light;
+#ifdef MATERIAL_TEXTURE
+uniform sampler2D texture_metalness;
+uniform sampler2D texture_albedo;
+uniform sampler2D texture_alpha;
+
+Material material_get() {
+    float _alpha = texture(texture_alpha, TexCoord).x;
+    float _metalness = texture(texture_metalness, TexCoord).x;
+    vec3 _albedo = pow(texture(texture_albedo, TexCoord).xyz, vec3(2.2));
+    float _ao = 1.0;
+
+    return Material(_alpha, _metalness, _albedo, _ao);
+}
+
+#else
+
 uniform Material material;
+Material material_get() {
+    return material;
+}
+
+#endif
+
+uniform PointLight light;
 uniform vec3 eye_pos;
 uniform vec3 ambient;
 
@@ -89,11 +111,13 @@ void main() {
     float attenuation = 1.0 / (distance * distance);
     vec3 Li = light.color * attenuation;
 
-    Lo += BRDF_Cook_Torrance(N, V, L, material) * Li * NdotL;
+    Material mat = material_get();
+
+    Lo += BRDF_Cook_Torrance(N, V, L, mat) * Li * NdotL;
 
 
     // 环境光
-    vec3 ambient = ambient * material.albedo * material.ao;
+    vec3 ambient = ambient * mat.albedo * mat.ao;
 
     // 最终的颜色
     vec3 color = ambient + Lo;
