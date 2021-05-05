@@ -90,13 +90,33 @@ list(APPEND ALL_SRC
         engine/utils/src/file.cpp)
 
 
-# 目标1
+# 渲染各个场景
 # =============================================================================
-add_executable(main ${ALL_SRC} main.cpp)
-target_link_libraries(main ${LINKS})
+add_executable(scene_box_floor ${ALL_SRC} scene/scene_box_floor.cpp)
+target_link_libraries(scene_box_floor ${LINKS})
 
+add_executable(scene_light ${ALL_SRC} scene/scene_light.cpp)
+target_link_libraries(scene_light ${LINKS})
 
-# 目标2
+add_executable(scene_nano ${ALL_SRC} scene/scene_nano.cpp)
+target_link_libraries(scene_nano ${LINKS})
+
+add_executable(scene_pbr_dl ${ALL_SRC} scene/scene_pbr_dl.cpp)
+target_link_libraries(scene_pbr_dl ${LINKS})
+
+add_executable(scene_pbr_ibl ${ALL_SRC} scene/scene_pbr_ibl.cpp)
+target_link_libraries(scene_pbr_ibl ${LINKS})
+
+add_executable(scene_simple ${ALL_SRC} scene/scene_simple.cpp)
+target_link_libraries(scene_simple ${LINKS})
+
+add_executable(scene_skybox ${ALL_SRC} scene/scene_skybox.cpp)
+target_link_libraries(scene_skybox ${LINKS})
+
+add_executable(scene_space ${ALL_SRC} scene/scene_space.cpp)
+target_link_libraries(scene_space ${LINKS})
+
+# 一般性测试
 # =============================================================================
 add_executable(test test.cpp)
 target_link_libraries(test spdlog::spdlog)

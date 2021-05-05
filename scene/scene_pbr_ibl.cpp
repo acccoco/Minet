@@ -1,5 +1,4 @@
-#ifndef RENDER_SCENE_PBR_IBL_H
-#define RENDER_SCENE_PBR_IBL_H
+
 
 #include <memory>
 #include "../engine/utils/with.h"
@@ -10,6 +9,8 @@
 #include "../engine/frame_buffer.h"
 #include "./obj/box.h"
 #include "./obj/sphere.h"
+
+#include "../engine/core.h"
 
 
 class ScenePbrIBL : public Scene {
@@ -193,4 +194,7 @@ private:
 };
 
 
-#endif //RENDER_SCENE_PBR_IBL_H
+int main() {
+    run<ScenePbrIBL>();
+    return 0;
+}

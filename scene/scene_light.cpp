@@ -1,5 +1,3 @@
-#ifndef RENDER_SCENE_LIGHT_H
-#define RENDER_SCENE_LIGHT_H
 
 #include <memory>
 
@@ -14,6 +12,8 @@
 #include "../config.hpp"
 #include "obj/happy_box.h"
 #include "obj/light_box.h"
+
+#include "../engine/core.h"
 
 
 
@@ -181,4 +181,8 @@ private:
 
 };
 
-#endif //RENDER_SCENE_LIGHT_H
+
+int main() {
+    run<SceneLight>();
+    return 0;
+}

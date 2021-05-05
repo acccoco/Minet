@@ -1,6 +1,4 @@
 
-#ifndef RENDER_SCENE_PBR_DL_H
-#define RENDER_SCENE_PBR_DL_H
 
 #include <memory>
 #include <string>
@@ -9,6 +7,7 @@
 #include "./obj/sphere.h"
 #include "./obj/box.h"
 
+#include "../engine/core.h"
 
 char buffer[256];
 
@@ -135,4 +134,8 @@ private:
     PLight light{glm::vec3(-4.0f, 1.0f, 4.0f), glm::vec3(300.0f, 300.0f, 300.0f)};
 };
 
-#endif //RENDER_SCENE_PBR_DL_H
+
+int main() {
+    run<ScenePbrDL>();
+    return 0;
+}

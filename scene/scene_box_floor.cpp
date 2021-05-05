@@ -1,23 +1,12 @@
-#ifndef RENDER_SCENE_BOX_FLOOR_H
-#define RENDER_SCENE_BOX_FLOOR_H
 
-#include <cmath>
-#include <random>
 #include <memory>
-#include <pthread.h>
 #include "../engine/utils/with.h"
 #include "../engine/scene.h"
-#include "../engine/light.h"
 #include "../engine/color.h"
-#include "../engine/camera.h"
 #include "../engine/model.h"
-#include "../engine/frame_buffer.h"
-#include "../engine/shader.h"
-#include "../engine/texture.h"
-#include "../engine/utils/with.h"
-#include "../config.hpp"
 #include "./obj/box.h"
 #include "./obj/floor.h"
+#include "../engine/core.h"
 
 
 class SceneBoxFloor : public Scene {
@@ -126,4 +115,8 @@ private:
     glm::vec3 light_pos{2.f, 1.f, 2.f};
 };
 
-#endif //RENDER_SCENE_BOX_FLOOR_H
+
+int main() {
+    run<SceneBoxFloor>();
+    return 0;
+}

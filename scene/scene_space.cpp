@@ -1,5 +1,3 @@
-#ifndef RENDER_SCENE_SPACE_H
-#define RENDER_SCENE_SPACE_H
 
 #include <cmath>
 #include <random>
@@ -14,6 +12,8 @@
 #include "../engine/texture.h"
 #include "../engine/utils/with.h"
 #include "../config.hpp"
+
+#include "../engine/core.h"
 
 
 class UBOMatrices : public With {
@@ -172,4 +172,7 @@ private:
 };
 
 
-#endif //RENDER_SCENE_SPACE_H
+int main() {
+    run<SceneSpace>();
+    return 0;
+}

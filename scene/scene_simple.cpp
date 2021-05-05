@@ -1,10 +1,10 @@
-#ifndef RENDER_SCENE_SIMPLE_H
-#define RENDER_SCENE_SIMPLE_H
 
 #include "../engine/scene.h"
 #include "../engine/color.h"
 
 #include "obj/light_box.h"
+
+#include "../engine/core.h"
 
 
 class SceneSimple : public Scene {
@@ -38,4 +38,8 @@ private:
     }
 };
 
-#endif //RENDER_SCENE_SIMPLE_H
+
+int main() {
+    run<SceneSimple>();
+    return 0;
+}

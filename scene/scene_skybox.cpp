@@ -1,5 +1,3 @@
-#ifndef RENDER_SCENE_SKYBOX_H
-#define RENDER_SCENE_SKYBOX_H
 
 #include <memory>
 #include <string>
@@ -8,6 +6,8 @@
 #include "./obj/sphere.h"
 #include "./obj/cube.h"
 #include "./obj/plane.h"
+
+#include "../engine/core.h"
 
 
 class SceneSkyBox : public Scene {
@@ -121,4 +121,8 @@ private:
     GLuint cubemap_skybox;
 };
 
-#endif //RENDER_SCENE_SKYBOX_H
+
+int main() {
+    run<SceneSkyBox>();
+    return 0;
+}

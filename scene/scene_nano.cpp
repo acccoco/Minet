@@ -1,5 +1,3 @@
-#ifndef RENDER_SCENE_NANO_H
-#define RENDER_SCENE_NANO_H
 
 #include <memory>
 
@@ -12,6 +10,8 @@
 #include "../engine/texture.h"
 
 #include "../config.hpp"
+
+#include "../engine/core.h"
 
 class SceneNano : public Scene {
 private:
@@ -39,4 +39,8 @@ private:
 
 };
 
-#endif //RENDER_SCENE_NANO_H
+
+int main() {
+    run<SceneNano>();
+    return 0;
+}
