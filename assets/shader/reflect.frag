@@ -5,6 +5,7 @@ in vec3 normal;
 in vec3 position;
 
 uniform vec3 eye_pos;
+uniform float reflect_indensity;
 uniform samplerCube sky_texture;
 
 void main()
@@ -20,7 +21,6 @@ void main()
     vec3 refract_color = texture(sky_texture, refract_dir).rgb;
 
     // 反射强度和折射强度
-    float reflect_indensity = 0.5;
     float refract_indensity = 1.0 - reflect_indensity;
     FragColor = vec4(reflect_indensity * reflect_color + refract_indensity * refract_color, 1.0);
 }

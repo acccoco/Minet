@@ -6,7 +6,7 @@ Texture2D::Texture2D(std::string path) : path(std::move(path)) {
 
 void Texture2D::init() {
     // 加载图片
-    unsigned char *data = this->load_file(this->path);
+    unsigned char *data = Texture2D::load_file(this->path, &width, &height, &nr_channels);
 
     // 输送到 GPU
     this->id = Texture2D::regist_texture(data, width, height, this->nr_channels);
@@ -54,9 +54,9 @@ unsigned int Texture2D::regist_texture(unsigned char *data, int width, int heigh
     return texture;
 }
 
-unsigned char *Texture2D::load_file(std::string &file_path) {
+unsigned char *Texture2D::load_file(const std::string &file_path, int *_width, int *_height, int *_nr_channels) {
     SPDLOG_INFO("load texture from file: {}", file_path);
-    unsigned char *data = stbi_load(file_path.c_str(), &this->width, &this->height, &this->nr_channels, 0);
+    unsigned char *data = stbi_load(file_path.c_str(), _width, _height, _nr_channels, 0);
     if (!data) {
         SPDLOG_ERROR("fail to load texture from file: {}", file_path);
         throw (std::exception());
@@ -114,6 +114,34 @@ unsigned int Texture2D::cubemap_texture_create(unsigned int width) {
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     return cube_map;
+}
+
+GLuint Texture2D::cubemap_tex_create(const std::vector<std::string> &files) {
+    assert(files.size() == 6);
+
+    GLuint cubemap;
+    int width, height, nr_channels;
+    unsigned char *data;
+
+    glGenTextures(1, &cubemap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);
+
+    for (int i = 0; i < 6; ++i) {
+        data = load_file(files[i], &width, &height, &nr_channels);
+        GLuint format = nr_channels == 3 ? GL_RGB : GL_RGBA;
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        stbi_image_free(data);
+    }
+
+    /* 多级纹理 */
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    /* uv 超过后如何采样 */
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    return cubemap;
 }
 
 std::map<TextureType, std::vector<std::shared_ptr<Texture2D>>>

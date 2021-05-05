@@ -37,6 +37,8 @@ public:
     /* 创建立方体贴图，内容为空，大小为512x512，内部存储格式为 RGB16F */
     static unsigned int cubemap_texture_create(unsigned int width);
 
+    static GLuint cubemap_tex_create(const std::vector<std::string> &files);
+
 private:
     std::string path;
     int width = 0;
@@ -50,10 +52,10 @@ private:
     static unsigned int regist_texture(unsigned char *data, int width, int height, int nr_channels);
 
     /* 加载图片 */
-    unsigned char *load_file(std::string &file_path);
+    static unsigned char *load_file(const std::string &file_path, int *_width, int *_height, int *_nr_channels);
 
     /* 创建一个 hdr 材质 */
-    static unsigned int hdr_texture_create(int width, int height, float* data);
+    static unsigned int hdr_texture_create(int width, int height, float *data);
 };
 
 

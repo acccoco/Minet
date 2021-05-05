@@ -12,6 +12,7 @@
 #include "./scene/scene_space.h"
 #include "./scene/scene_box_floor.h"
 #include "./scene/scene_pbr_dl.h"
+#include "./scene/scene_skybox.h"
 #include "./scene/scene_pbr_ibl.h"
 
 
@@ -25,7 +26,7 @@ int main() {
     imgui_init();
 
     // 场景初始化
-    ScenePbrIBL scene;
+    SceneSkyBox scene;
     scene.init();
 
     glEnable(GL_DEPTH_TEST);
