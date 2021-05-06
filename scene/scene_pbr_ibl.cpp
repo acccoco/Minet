@@ -13,6 +13,7 @@
 #include "../engine/core.h"
 
 
+/* PBR：ambient 的图像光照 + diffuse、specular 的直接光照 */
 class ScenePbrIBL : public Scene {
     struct Material {
         float alpha;

@@ -1,3 +1,5 @@
+/* 没有本色的物体 */
+
 #version 330 core
 
 in vec3 FragPos;

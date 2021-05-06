@@ -10,6 +10,7 @@
 #include "../engine/core.h"
 
 
+/* 天空盒，透明，折射效果 */
 class SceneSkyBox : public Scene {
 public:
     void _init() override {

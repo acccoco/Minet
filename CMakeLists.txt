@@ -48,7 +48,7 @@ list(APPEND LINKS
         imm32 dwmapi)
 
 
-# 头文件
+# 源代码库的头文件
 include_directories(C:/msys64/mingw64/include)
 include_directories(
         lib/glad/include
@@ -57,7 +57,7 @@ include_directories(
 )
 
 
-# 一起编译的源文件
+# 源代码库的源文件
 set(ALL_SRC)
 list(APPEND ALL_SRC
         lib/glad/src/glad.c

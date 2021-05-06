@@ -1,3 +1,5 @@
+/* 只有 diffuse 贴图的物体 */
+
 #version 330 core
 out vec4 FragColor;
 

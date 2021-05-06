@@ -1,3 +1,5 @@
+/* 线性深度可视化 */
+
 #version 330 core
 
 struct Material {

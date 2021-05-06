@@ -10,6 +10,7 @@
 #include "../engine/core.h"
 
 
+/* 透明效果的场景 */
 class SceneTransparent : public Scene {
 public:
     void _init() override {

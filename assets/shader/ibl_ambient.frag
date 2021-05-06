@@ -1,3 +1,5 @@
+/* PBR，IBL：只有 ambient 部分使用了环境光，diffuse 和 specular 部分使用的直接光照 */
+
 #version 330 core
 
 struct Material {

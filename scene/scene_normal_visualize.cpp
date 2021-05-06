@@ -16,6 +16,7 @@
 #include "../engine/core.h"
 
 
+/* 法线可视化 */
 class SceneNormalVisualize : public Scene {
 public:
     void _init() override {

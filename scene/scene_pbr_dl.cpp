@@ -11,6 +11,8 @@
 
 char buffer[256];
 
+
+/* PBR：直接光照 */
 class ScenePbrDL : public Scene {
     /* 球体的物理参数 */
     struct Material {

@@ -13,6 +13,8 @@
 
 #include "../engine/core.h"
 
+
+/* 纳米装甲模型的场景 */
 class SceneNano : public Scene {
 private:
     std::shared_ptr<Model> model_nano;

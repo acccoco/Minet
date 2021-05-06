@@ -1,3 +1,5 @@
+/* 简单的反射和折射效果，非 PBR */
+
 #version 330 core
 out vec4 FragColor;
 

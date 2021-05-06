@@ -16,6 +16,7 @@
 #include "../engine/core.h"
 
 
+/* 太空：星球 + 大量陨石，instance场景 */
 class UBOMatrices : public With {
 public:
     GLuint id{};

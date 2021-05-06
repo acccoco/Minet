@@ -16,6 +16,7 @@
 #include "../engine/core.h"//
 
 
+/* 背面剔除 */
 class SceneFaceCull : public Scene {
 public:
     void _init() override {

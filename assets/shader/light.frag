@@ -1,3 +1,5 @@
+/* 渲染光源的参考物 */
+
 #version 330 core
 out vec4 FragColor;
 

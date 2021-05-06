@@ -8,7 +8,7 @@
 #include "./obj/floor.h"
 #include "../engine/core.h"
 
-
+/* 基础场景：box 和 floor，使用 phong 光照 */
 class SceneBoxFloor : public Scene {
 public:
 

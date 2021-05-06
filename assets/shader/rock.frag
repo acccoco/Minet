@@ -1,3 +1,5 @@
+/* 绘制一个岩石 */
+
 #version 330 core
 
 in Block {

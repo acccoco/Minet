@@ -1,3 +1,5 @@
+/* 等距柱状投影的 hdr 贴图变成立方体贴图 */
+
 #version 330 core
 
 in vec3 FragPos;

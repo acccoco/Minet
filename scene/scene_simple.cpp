@@ -7,6 +7,7 @@
 #include "../engine/core.h"
 
 
+/* 简单的只有一个立方体的场景 */
 class SceneSimple : public Scene {
 private:
     std::shared_ptr<Shader> shader;

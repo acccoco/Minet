@@ -1,3 +1,5 @@
+/* PBR：直接光照 */
+
 #version 330 core
 
 in vec3 FragPos;

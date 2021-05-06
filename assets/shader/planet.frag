@@ -1,3 +1,5 @@
+/* 批量绘制 instance */
+
 #version 330 core
 
 in Block {

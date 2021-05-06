@@ -16,7 +16,7 @@
 #include "../engine/core.h"
 
 
-
+/* 多个光源的场景：点光源，聚光 */
 class SceneLight : public Scene {
 private:
     // 光源随距离衰减的系数

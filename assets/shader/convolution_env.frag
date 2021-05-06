@@ -1,5 +1,6 @@
-#version 330 core
+/* 预计算 PBR 的漫反射部分：Lambert 反射 */
 
+#version 330 core
 
 in vec3 FragPos;
 out vec4 FragColor;

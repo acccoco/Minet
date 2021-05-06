@@ -14,6 +14,7 @@
 #include "../engine/core.h"
 
 
+/* 基于帧缓冲的后期处理，使用了卷积核 */
 class ScenePostProcess : public Scene {
 public:
     void _init() override {
