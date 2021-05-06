@@ -107,6 +107,59 @@ public:
 };
 
 
+template<unsigned int A, unsigned int B = 0, unsigned int C = 0>
+class MeshT : public With {
+public:
+    unsigned int vertex_cnt{};
+    GLuint VAO{};
+
+    explicit MeshT(const std::vector<float> &vertices) {
+        assert(A != 0);
+        unsigned int strip = A + B + C;
+        assert(vertices.size() % strip == 0);
+
+        vertex_cnt = vertices.size() / strip;
+
+        glGenVertexArrays(1, &VAO);
+        glBindVertexArray(VAO);
+
+        GLuint VBO;
+        glGenBuffers(1, &VBO);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices[0], GL_STATIC_DRAW);
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, A, GL_FLOAT, GL_FALSE, strip * sizeof(float), (void *) (0 * sizeof(float)));
+        if (B != 0) {
+            glEnableVertexAttribArray(1);
+            glVertexAttribPointer(1, B, GL_FLOAT, GL_FALSE, strip * sizeof(float), (void *) (A * sizeof(float)));
+        }
+        if (C != 0) {
+            glEnableVertexAttribArray(2);
+            glVertexAttribPointer(2, C, GL_FLOAT, GL_FALSE, strip * sizeof(float), (void *) ((A + B) * sizeof(float)));
+        }
+
+        glBindVertexArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+
+    void in() override {
+        glBindVertexArray(VAO);
+    }
+
+    void out() override {
+        glBindVertexArray(0);
+    }
+
+    void draw() {
+        glBindVertexArray(VAO);
+        glDrawArrays(GL_TRIANGLES, 0, vertex_cnt);
+        glBindVertexArray(0);
+    }
+};
+
+
 /* 二维模型，只有 pos 和 uv */
 class PT2Mesh : public With {
 public:

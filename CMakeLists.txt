@@ -119,6 +119,9 @@ target_link_libraries(scene_skybox ${LINKS})
 add_executable(scene_space ${ALL_SRC} scene/scene_space.cpp)
 target_link_libraries(scene_space ${LINKS})
 
+add_executable(scene_transparent ${ALL_SRC} scene/scene_transparent.cpp)
+target_link_libraries(scene_transparent ${LINKS})
+
 # 一般性测试
 # =============================================================================
 add_executable(test test.cpp)

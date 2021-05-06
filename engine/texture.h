@@ -29,7 +29,7 @@ public:
 
     Texture2D() = default;
 
-    explicit Texture2D(std::string path);
+    explicit Texture2D(std::string path, bool repeat = true);
 
     /* 从文件中载入 hdr 材质 */
     static unsigned int hdr_load(const std::string &path);
@@ -44,12 +44,13 @@ private:
     int width = 0;
     int height = 0;
     int nr_channels = 0;
+    bool repeat{};
 
     /* 从文件中取得数据，传送到 GPU 中 */
     void init();
 
     /* 将材质输送到 gpu */
-    static unsigned int regist_texture(unsigned char *data, int width, int height, int nr_channels);
+    static unsigned int regist_texture(unsigned char *data, int width, int height, int nr_channels, bool repeat);
 
     /* 加载图片 */
     static unsigned char *load_file(const std::string &file_path, int *_width, int *_height, int *_nr_channels);

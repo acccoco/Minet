@@ -31,4 +31,17 @@ const std::vector<float> plane_pt_2 = {
         1.0f, 1.0f, 1.0f, 1.0f
 };
 
+
+/* 面朝 +z 的三维正方形 */
+const std::vector<float> plane_pt_3 = {
+        // positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
+        0.0f, 0.5f, 0.0f, 0.0f, 0.0f,
+        0.0f, -0.5f, 0.0f, 0.0f, 1.0f,
+        1.0f, -0.5f, 0.0f, 1.0f, 1.0f,
+
+        0.0f, 0.5f, 0.0f, 0.0f, 0.0f,
+        1.0f, -0.5f, 0.0f, 1.0f, 1.0f,
+        1.0f, 0.5f, 0.0f, 1.0f, 0.0f
+};
+
 #endif //RENDER_PLANE_H
