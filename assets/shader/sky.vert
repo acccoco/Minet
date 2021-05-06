@@ -1,8 +1,15 @@
 #version 330 core
 layout (location = 0) in vec3 aPos;
 
+#ifdef UNIFORM_BLOCK
+layout (std140) uniform Matrices {
+    mat4 view;
+    mat4 projection;
+};
+#else
 uniform mat4 view;
 uniform mat4 projection;
+#endif
 
 out vec3 TexVec;
 

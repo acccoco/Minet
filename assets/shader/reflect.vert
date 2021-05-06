@@ -7,10 +7,15 @@ out vec3 position;
 
 uniform mat4 model;
 
+#ifdef UNIFORM_BLOCK
 layout (std140) uniform Matrices {
     mat4 view;
     mat4 projection;
 };
+#else
+uniform mat4 view;
+uniform mat4 projection;
+#endif
 
 void main()
 {

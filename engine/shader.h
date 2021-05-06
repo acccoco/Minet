@@ -35,7 +35,8 @@ class Shader : public With {
 public:
     GLint id = 0;
 
-    Shader(const std::string &vertex, const std::string &fragment, const std::vector<std::string> &macros = {});
+    Shader(const std::string &vertex, const std::string &fragment, const std::vector<std::string> &macros = {},
+           const std::string &geometry = "");
 
     void uniform_block(const std::string &name, GLuint index) const;
 
@@ -66,7 +67,7 @@ protected:
      */
     std::map<std::string, GLint> uniform_location_map;
 
-    static GLuint shader_link(GLuint vertex, GLuint fragment);
+    static GLuint shader_link(GLuint vertex, GLuint fragment, GLuint geometry = 0);
 
     static GLuint
     shader_compile(const std::string &file_name, GLenum shader_type, const std::vector<std::string> &macros);

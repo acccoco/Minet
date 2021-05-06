@@ -107,6 +107,9 @@ target_link_libraries(scene_light ${LINKS})
 add_executable(scene_nano ${ALL_SRC} scene/scene_nano.cpp)
 target_link_libraries(scene_nano ${LINKS})
 
+add_executable(scene_normal_visualize ${ALL_SRC} scene/scene_normal_visualize.cpp)
+target_link_libraries(scene_normal_visualize ${LINKS})
+
 add_executable(scene_pbr_dl ${ALL_SRC} scene/scene_pbr_dl.cpp)
 target_link_libraries(scene_pbr_dl ${LINKS})
 

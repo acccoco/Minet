@@ -39,16 +39,19 @@ GLint Shader::unifrom_location_get(const std::string &name) {
 }
 
 
-Shader::Shader(const std::string &vertex, const std::string &fragment, const std::vector<std::string> &macros) {
+Shader::Shader(const std::string &vertex, const std::string &fragment, const std::vector<std::string> &macros,
+               const std::string &geometry) {
     GLuint id_vertex;
     GLuint id_fragment;
+    GLuint id_geometry;
 
     /* 编译着色器 */
     id_vertex = shader_compile(vertex, GL_VERTEX_SHADER, macros);
     id_fragment = shader_compile(fragment, GL_FRAGMENT_SHADER, macros);
+    id_geometry = geometry.empty() ? 0 : shader_compile(geometry, GL_GEOMETRY_SHADER, macros);
 
     /* 链接着色器 */
-    this->id = shader_link(id_vertex, id_fragment);
+    this->id = shader_link(id_vertex, id_fragment, id_geometry);
 
     /* 删除着色器对象 */
     glDeleteShader(id_vertex);
@@ -58,7 +61,7 @@ Shader::Shader(const std::string &vertex, const std::string &fragment, const std
 
 GLuint
 Shader::shader_compile(const std::string &file_name, GLenum shader_type, const std::vector<std::string> &macros) {
-    assert(shader_type == GL_VERTEX_SHADER || shader_type == GL_FRAGMENT_SHADER);
+    assert(shader_type == GL_VERTEX_SHADER || shader_type == GL_FRAGMENT_SHADER || shader_type == GL_GEOMETRY_SHADER);
 
     /* 读文件 */
     std::vector<std::string> lines = File::file_load_lines(file_name);
@@ -141,12 +144,14 @@ void Shader::out() {
     glUseProgram(0);
 }
 
-GLuint Shader::shader_link(GLuint vertex, GLuint fragment) {
+GLuint Shader::shader_link(GLuint vertex, GLuint fragment, GLuint geometry) {
     // 链接着色器
     SPDLOG_INFO("link shader");
     unsigned int shader_program = glCreateProgram();
     glAttachShader(shader_program, vertex);
     glAttachShader(shader_program, fragment);
+    if (geometry != 0)
+        glAttachShader(shader_program, geometry);
     glLinkProgram(shader_program);
 
     // 查看结果
