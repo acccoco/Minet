@@ -98,6 +98,9 @@ target_link_libraries(scene_box_floor ${LINKS})
 add_executable(scene_edge_outline ${ALL_SRC} scene/scene_edge_outline.cpp)
 target_link_libraries(scene_edge_outline ${LINKS})
 
+add_executable(scene_face_cull ${ALL_SRC} scene/scene_face_cull.cpp)
+target_link_libraries(scene_face_cull ${LINKS})
+
 add_executable(scene_post_process ${ALL_SRC} scene/scene_post_process.cpp)
 target_link_libraries(scene_post_process ${LINKS})
 
