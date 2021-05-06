@@ -107,6 +107,23 @@ public:
 };
 
 
+/* 二维模型，只有 pos 和 uv */
+class PT2Mesh : public With {
+public:
+
+    unsigned int vertex_cnt{};
+    GLuint VAO{};
+
+    explicit PT2Mesh(const std::vector<float> &vertices);
+
+    void in() override;
+
+    void out() override;
+
+    void draw() const;
+};
+
+
 /* 通过 Assimp 来构建一个 Mesh */
 class MeshBuilder {
 public:

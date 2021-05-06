@@ -18,4 +18,17 @@ const std::vector<float> plane_pnt = {
         -5.0f, 0.f, -5.0f, 0.0f, 1.0f, 0.0f, 0.0f, 2.0f,
 };
 
+
+/* 面朝 +z 的二维正方形 */
+const std::vector<float> plane_pt_2 = {
+        // positions   // texCoords
+        -1.0f, 1.0f, 0.0f, 1.0f,
+        -1.0f, -1.0f, 0.0f, 0.0f,
+        1.0f, -1.0f, 1.0f, 0.0f,
+
+        -1.0f, 1.0f, 0.0f, 1.0f,
+        1.0f, -1.0f, 1.0f, 0.0f,
+        1.0f, 1.0f, 1.0f, 1.0f
+};
+
 #endif //RENDER_PLANE_H

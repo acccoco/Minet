@@ -124,8 +124,7 @@ Mesh MeshBuilder::build(const aiMesh &mesh, const aiScene &scene, const std::str
         // 一个顶点可以有多组纹理坐标，这里只需要第一组
         if (mesh.mTextureCoords[0]) {
             vertex = VertexBuilder::build(mesh.mVertices[i], mesh.mNormals[i], mesh.mTextureCoords[0][i]);
-        }
-        else {
+        } else {
             vertex = VertexBuilder::build(mesh.mVertices[i], mesh.mNormals[i]);
         }
 
@@ -144,7 +143,7 @@ Mesh MeshBuilder::build(const aiMesh &mesh, const aiScene &scene, const std::str
     return Mesh(vertices, faces, textures);
 }
 
-PNTMesh::PNTMesh(const std::vector<float> &vertices)  {
+PNTMesh::PNTMesh(const std::vector<float> &vertices) {
     assert(vertices.size() % (3 + 3 + 2) == 0);
     vertex_cnt = vertices.size() / (3 + 3 + 2);
 
@@ -158,11 +157,11 @@ PNTMesh::PNTMesh(const std::vector<float> &vertices)  {
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices[0], GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*) nullptr);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) nullptr);
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (3 * sizeof(float)));
     glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (6 * sizeof(float)));
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -177,6 +176,43 @@ void PNTMesh::out() {
 }
 
 void PNTMesh::draw() const {
+    glBindVertexArray(VAO);
+    glDrawArrays(GL_TRIANGLES, 0, vertex_cnt);
+    glBindVertexArray(0);
+}
+
+PT2Mesh::PT2Mesh(const std::vector<float> &vertices) {
+    assert(vertices.size() % (2 + 2) == 0);
+
+    vertex_cnt = vertices.size() / (2 + 2);
+
+    glGenVertexArrays(1, &VAO);
+    glBindVertexArray(VAO);
+
+    GLuint VBO;
+    glGenBuffers(1, &VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices[0], GL_STATIC_DRAW);
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *) (0 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *) (2 * sizeof(float)));
+
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void PT2Mesh::in() {
+    glBindVertexArray(VAO);
+}
+
+void PT2Mesh::out() {
+    glBindVertexArray(0);
+}
+
+void PT2Mesh::draw() const {
     glBindVertexArray(VAO);
     glDrawArrays(GL_TRIANGLES, 0, vertex_cnt);
     glBindVertexArray(0);

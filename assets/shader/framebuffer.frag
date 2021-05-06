@@ -3,12 +3,15 @@ out vec4 FragColor;
 in vec2 TexCoords;
 uniform sampler2D texture1;
 
+uniform int pp;
+
+// 使用卷积核进行处理
+vec3 convolution(float kernel[9]);
+
 // 后期处理：反相
 vec3 pp_inverse();
 // 后期处理：灰度
 vec3 pp_gray();
-// 使用卷积核进行处理
-vec3 convolution(float kernel[9]);
 // 后期处理：锐化
 vec3 pp_sharpe1();
 vec3 pp_sharpe2();
@@ -19,9 +22,27 @@ vec3 pp_edge_detect();
 // 后期处理：边缘检测 + 灰度
 vec3 pp_edge_gray();
 
+
 void main()
 {
-    vec3 final_color=pp_edge_gray();
+    vec3 final_color;
+    if (pp == 0)
+        final_color = pp_inverse();
+    else if (pp == 1)
+        final_color = pp_gray();
+    else if (pp == 2)
+        final_color = pp_sharpe1();
+    else if (pp == 3)
+        final_color = pp_sharpe2();
+    else if (pp == 4)
+        final_color = pp_blur();
+    else if (pp == 5)
+        final_color = pp_edge_detect();
+    else if (pp == 6)
+        final_color = pp_edge_gray();
+    else
+        final_color = texture(texture1, TexCoords).xyz;
+
     FragColor=vec4(final_color,1.);
 }
 

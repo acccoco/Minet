@@ -95,6 +95,9 @@ list(APPEND ALL_SRC
 add_executable(scene_box_floor ${ALL_SRC} scene/scene_box_floor.cpp)
 target_link_libraries(scene_box_floor ${LINKS})
 
+add_executable(scene_post_process ${ALL_SRC} scene/scene_post_process.cpp)
+target_link_libraries(scene_post_process ${LINKS})
+
 add_executable(scene_light ${ALL_SRC} scene/scene_light.cpp)
 target_link_libraries(scene_light ${LINKS})
 
