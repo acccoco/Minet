@@ -5,6 +5,10 @@
 #ifndef RENDER_ENGINE_INIT_H
 #define RENDER_ENGINE_INIT_H
 
+// 这个宏定义可以让 glfw 不必出现在 glad 的后面
+#ifndef GLFW_INCLUDE_NONE
+#define GLFW_INCLUDE_NONE
+#endif
 #include <GLFW/glfw3.h>
 #include "./window.h"
 

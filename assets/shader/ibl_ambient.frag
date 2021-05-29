@@ -24,6 +24,8 @@ uniform Material material;
 uniform vec3 eye_pos;
 uniform vec3 ambient;
 uniform samplerCube cubemap_env;
+
+out vec4 FragColor;
 /* ------------------------------------------------------ */
 
 
@@ -124,5 +126,5 @@ void main() {
     // Gamma 校正
     color = pow(color, vec3(1.0/2.2));
 
-    gl_FragColor = vec4(color, 1.0);
+    FragColor = vec4(color, 1.0);
 }

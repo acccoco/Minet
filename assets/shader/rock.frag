@@ -14,7 +14,9 @@ struct Material {
 
 uniform Material material;
 
+out vec4 FragColor;
+
 
 void main() {
-    gl_FragColor = texture(material.texture_diffuse_0, fs_in.TexCoord);
+    FragColor = texture(material.texture_diffuse_0, fs_in.TexCoord);
 }

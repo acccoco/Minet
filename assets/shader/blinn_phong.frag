@@ -15,6 +15,8 @@ uniform PointLight plight0;
 uniform vec3 eye_pos;
 uniform int blinn_phong;
 
+out vec4 FragColor;
+
 
 void main()
 {
@@ -44,5 +46,5 @@ void main()
     vec3 diffuse_color = texture(texture_diffuse_0, TexCoord).rgb * diffuse_coef * plight0.color;
     vec3 specular_color = vec3(1.f, 1.f, 1.f) * specular_coef;
 
-    gl_FragColor = vec4((diffuse_color + specular_color) * light_attenuation, 1.0f);
+    FragColor = vec4((diffuse_color + specular_color) * light_attenuation, 1.0f);
 }
