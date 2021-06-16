@@ -2,7 +2,7 @@
 #define RENDER_FRAME_BUFFER_H
 
 #include <glad/glad.h>
-#include "./utils/with.h"
+#include "utils/with.h"
 
 /**
  * 帧缓冲，规格如下：
@@ -15,10 +15,8 @@ public:
     /* 创建帧缓冲对象及附件 */
     FrameBuffer(unsigned int width, unsigned int height);
 
-    void use() const;
-
     /* 获取颜色缓冲的纹理 */
-    GLuint color_tex_get() const;
+    [[nodiscard]] GLuint color_tex_get() const;
 
     void in() override;
 

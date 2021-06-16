@@ -12,8 +12,8 @@
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 
-#include "./camera.h"
-#include "./window.h"
+#include "camera.h"
+#include "window.h"
 
 
 class Scene {
@@ -28,18 +28,19 @@ private:
 
 public:
     void init() {
+        /* 执行场景自定义的初始化操作 */
         this->_init();
     }
 
     void update() {
+        /* 场景更新以及绘制 */
         this->_update();
 
+        /* ImGui 绘制 */
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-
         this->_gui();
-
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }

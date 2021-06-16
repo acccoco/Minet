@@ -1,36 +1,31 @@
 
 #include <cassert>
 #include <exception>
-#include "../shader.h"
-#include "../utils/file.h"
+
+#include <fmt/format.h>
+
+#include "mesh.h"
+#include "model.h"
+#include "shader.h"
+#include "utils/file.h"
 
 
 // 全局变量 =======================================================================
 const int LOG_INFO_LEN = 512;
 
 
-const GLuint VertAttribLocation::position = 0;
-const GLuint VertAttribLocation::normal = 1;
-const GLuint VertAttribLocation::texcoord = 2;
-
-
-const std::string ShaderMatrixName::model = "model";
-const std::string ShaderMatrixName::view = "view";
-const std::string ShaderMatrixName::projection = "projection";
-
-
 // 类方法实现 ======================================================================
-GLint Shader::unifrom_location_get(const std::string &name) {
-    auto iter = uniform_location_map.find(name);
+GLint Shader::_uniform_location_get(const std::string &name) {
+    auto iter = _uniform_location_map.find(name);
 
     // 没找到，需要调用 OpenGL 的接口查询
-    if (iter == uniform_location_map.end()) {
+    if (iter == _uniform_location_map.end()) {
         int location = glGetUniformLocation(this->id, name.c_str());
         if (location == -1) {
             SPDLOG_ERROR("fail to find shader uniform: {}", name);
             throw (std::exception());
         }
-        uniform_location_map.insert({name, location});
+        _uniform_location_map.insert({name, location});
         return location;
     }
 
@@ -46,12 +41,12 @@ Shader::Shader(const std::string &vertex, const std::string &fragment, const std
     GLuint id_geometry;
 
     /* 编译着色器 */
-    id_vertex = shader_compile(vertex, GL_VERTEX_SHADER, macros);
-    id_fragment = shader_compile(fragment, GL_FRAGMENT_SHADER, macros);
-    id_geometry = geometry.empty() ? 0 : shader_compile(geometry, GL_GEOMETRY_SHADER, macros);
+    id_vertex = _shader_compile(vertex, GL_VERTEX_SHADER, macros);
+    id_fragment = _shader_compile(fragment, GL_FRAGMENT_SHADER, macros);
+    id_geometry = geometry.empty() ? 0 : _shader_compile(geometry, GL_GEOMETRY_SHADER, macros);
 
     /* 链接着色器 */
-    this->id = shader_link(id_vertex, id_fragment, id_geometry);
+    this->id = _shader_link(id_vertex, id_fragment, id_geometry);
 
     /* 删除着色器对象 */
     glDeleteShader(id_vertex);
@@ -60,10 +55,12 @@ Shader::Shader(const std::string &vertex, const std::string &fragment, const std
 
 
 GLuint
-Shader::shader_compile(const std::string &file_name, GLenum shader_type, const std::vector<std::string> &macros) {
-    assert(shader_type == GL_VERTEX_SHADER || shader_type == GL_FRAGMENT_SHADER || shader_type == GL_GEOMETRY_SHADER);
+Shader::_shader_compile(const std::string &file_name, GLenum shader_type, const std::vector<std::string> &macros) {
+    assert(shader_type == GL_VERTEX_SHADER
+           || shader_type == GL_FRAGMENT_SHADER
+           || shader_type == GL_GEOMETRY_SHADER);
 
-    /* 读文件 */
+    /* 逐行读取文件，在版本声明后追加宏定义 */
     std::vector<std::string> lines = File::file_load_lines(file_name);
     std::string shader_source;
     for (const auto &line : lines) {
@@ -72,7 +69,7 @@ Shader::shader_compile(const std::string &file_name, GLenum shader_type, const s
         /* 在 #version 后面追加宏定义 */
         if (line.find("#version") != std::string::npos) {
             for (auto const &macro : macros) {
-                shader_source += "#define " + macro + "\n";
+                shader_source += fmt::format("#define {}\n", macro);
             }
         }
     }
@@ -97,57 +94,11 @@ Shader::shader_compile(const std::string &file_name, GLenum shader_type, const s
     return shader;
 }
 
-void Shader::use() const {
-    glUseProgram(this->id);
-}
 
-void Shader::uniform_vec4_set(const std::string &name, const glm::vec4 &v) {
-    glUseProgram(this->id);
-    glUniform4f(unifrom_location_get(name), v.x, v.y, v.z, v.w);
-}
-
-void Shader::uniform_float_set(const std::string &name, float value) {
-    glUseProgram(this->id);
-    glUniform1f(unifrom_location_get(name), value);
-}
-
-void Shader::uniform_int_set(const std::string &name, GLint value) {
-    glUseProgram(this->id);
-    glUniform1i(unifrom_location_get(name), value);
-}
-
-void Shader::uniform_vec3_set(const std::string &name, const glm::vec3 &v) {
-    glUseProgram(this->id);
-    glUniform3f(unifrom_location_get(name), v.x, v.y, v.z);
-}
-
-void Shader::uniform_mat4_set(const std::string &name, const glm::mat4 &m) {
-    glUseProgram(this->id);
-    glUniformMatrix4fv(unifrom_location_get(name), 1, GL_FALSE, glm::value_ptr(m));
-}
-
-void Shader::uniform_tex2d_set(const std::string &name, GLuint texture_unit) {
-    glUseProgram(this->id);
-    glUniform1i(unifrom_location_get(name), texture_unit);
-}
-
-void Shader::uniform_block(const std::string &name, GLuint index) const {
-    GLuint uniform_block_location = glGetUniformBlockIndex(id, name.c_str());
-    glUniformBlockBinding(id, uniform_block_location, index);
-}
-
-void Shader::in() {
-    glUseProgram(this->id);
-}
-
-void Shader::out() {
-    glUseProgram(0);
-}
-
-GLuint Shader::shader_link(GLuint vertex, GLuint fragment, GLuint geometry) {
+GLuint Shader::_shader_link(GLuint vertex, GLuint fragment, GLuint geometry) {
     // 链接着色器
     SPDLOG_INFO("link shader");
-    unsigned int shader_program = glCreateProgram();
+    GLuint shader_program = glCreateProgram();
     glAttachShader(shader_program, vertex);
     glAttachShader(shader_program, fragment);
     if (geometry != 0)
@@ -167,47 +118,36 @@ GLuint Shader::shader_link(GLuint vertex, GLuint fragment, GLuint geometry) {
     return shader_program;
 }
 
-void ShaderExtLight::set(Shader &shader, const SpotLight &light, const std::string &name) {
-    shader.uniform_vec3_set(name + ".position", light.position);
-    shader.uniform_vec3_set(name + ".direction", light.direction);
-
-    set_light(shader, light, name);
-
-    set_attenuation(shader, light.attenuation, name);
-
-    // 设置切光角
-    shader.uniform_float_set(name + ".inner_cutoff", light.inner_cutoff);
-    shader.uniform_float_set(name + ".outer_cutoff", light.outer_cutoff);
+void Shader::set_textures(const std::vector<std::tuple<std::string, GLuint>> &texture_profile, GLsizei start_unit) {
+    glUseProgram(id);
+    assert(start_unit >= 0);
+    GLsizei texture_unit = start_unit;
+    for (auto &[texture_name, texture_id] : texture_profile) {
+        glActiveTexture(GL_TEXTURE0 + texture_unit);
+        glBindTexture(GL_TEXTURE_2D, texture_id);
+        glUniform1i(_uniform_location_get(texture_name), texture_unit);
+        texture_unit++;
+    }
 }
 
-void ShaderExtLight::set(Shader &shader, const DirLight &light, const std::string &name) {
-    shader.uniform_vec3_set(name + ".direction", light.direction);
+void Shader::set_textures(const Mesh &mesh,
+                          const std::vector<std::tuple<std::string, TextureType, unsigned int>> &texture_profile,
+                          GLsizei start_unit) {
 
-    set_light(shader, light, name);
-}
+    glUseProgram(id);
+    assert(start_unit >= 0);
+    GLsizei texture_unit = start_unit;
 
-void ShaderExtLight::set(Shader &shader, const PointLight &light, const std::string &name) {
-    shader.uniform_vec3_set(name + ".position", light.position);
+    for (auto &[texture_name, texture_type, idx]: texture_profile) {
+        /* 如果 mesh 的特定类型特定序号的材质不存在，就跳过 */
+        auto textures = mesh.textures(texture_type);
+        if (idx >= textures.size())
+            continue;
 
-    set_attenuation(shader, light.attenuation, name);
-
-    set_light(shader, light, name);
-}
-
-void ShaderExtLight::set_attenuation(Shader &shader, const AttenuationDistance &attenuation, const std::string &name) {
-    shader.uniform_float_set(name + ".constant", attenuation.constant);
-    shader.uniform_float_set(name + ".linear", attenuation.linear);
-    shader.uniform_float_set(name + ".quadratic", attenuation.quadratic);
-}
-
-void ShaderExtLight::set_light(Shader &shader, const Light &light, const std::string &name) {
-    shader.uniform_vec3_set(name + ".color.ambient", light.ambient);
-    shader.uniform_vec3_set(name + ".color.diffuse", light.diffuse);
-    shader.uniform_vec3_set(name + ".color.specular", light.specular);
-}
-
-void ShaderExtMVP::set(Shader &shader, const glm::mat4 &model, const glm::mat4 &view, const glm::mat4 &proj) {
-    shader.uniform_mat4_set("model", model);
-    shader.uniform_mat4_set("view", view);
-    shader.uniform_mat4_set("projection", proj);
+        /* 为 shader 绑定材质 */
+        glActiveTexture(GL_TEXTURE0 + texture_unit);
+        glBindTexture(GL_TEXTURE_2D, textures[idx]->id());
+        glUniform1i(_uniform_location_get(texture_name), texture_unit);
+        texture_unit++;
+    }
 }

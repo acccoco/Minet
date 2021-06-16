@@ -1,107 +1,114 @@
-#include "../texture.h"
+#include "texture.h"
 
-Texture2D::Texture2D(std::string path, bool repeat)
-        : path(std::move(path)), repeat(repeat) {
-    this->init();
-}
 
-void Texture2D::init() {
-    // 加载图片
-    unsigned char *data = Texture2D::load_file(this->path, &width, &height, &nr_channels);
+Texture2D::Texture2D(const std::string &path, TextureWrap wrap, TextureColorFormat color_format, bool mip_map,
+                     bool flip) {
+    // 载入文件
+    int width, height, nr_channels;
+    stbi_set_flip_vertically_on_load(flip);
+    unsigned char *data = stbi_load(path.c_str(), &width, &height, &nr_channels, 0);
+    if (!data) {
+        throw std::runtime_error(fmt::format("fail to load texture file: {}", path));
+    }
 
-    // 输送到 GPU
-    this->id = Texture2D::regist_texture(data, width, height, this->nr_channels, repeat);
-
-    // 释放内存
-    stbi_image_free(data);
-}
-
-unsigned int Texture2D::regist_texture(unsigned char *data, int width, int height, int nr_channels, bool repeat) {
-    unsigned int texture;
-    glGenTextures(1, &texture);
+    /* 生成 texture */
+    glGenTextures(1, &_id);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture);
+    glBindTexture(GL_TEXTURE_2D, _id);
 
-    // uv坐标超出范围后如何采样：重复
-    // 纹理环绕的方式：当超出 uv 后，是继续对边缘进行采样，还是让纹理重复
-    auto repeat_type = repeat ? GL_REPEAT: GL_CLAMP_TO_EDGE;
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, repeat_type);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, repeat_type);
-
-    // 材质放大和缩小时，应该如何采样
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    // 将纹理发送到显存
-    switch (nr_channels) {
-        case 1:
+    /* 传输纹理数据 */
+    if (color_format == TextureColorFormat::Auto) {
+        switch (nr_channels) {
+            case 1:
+                color_format = TextureColorFormat::RED;
+                break;
+            case 3:
+                color_format = TextureColorFormat::RGB;
+                break;
+            case 4:
+                color_format = TextureColorFormat::RGBA;
+                break;
+            default:
+                throw std::runtime_error(fmt::format("bad nr_channels: {}", nr_channels));
+        }
+    }
+    switch (color_format) {
+        case TextureColorFormat::RED:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, data);
             break;
-        case 3:
+        case TextureColorFormat::RGB:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
             break;
-        case 4:
+        case TextureColorFormat::RGBA:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
             break;
         default:
-            SPDLOG_ERROR("invalid texture channel number: {}", nr_channels);
-            throw std::exception();
+            throw std::runtime_error("bad texture color format.");
     }
 
-    // 生成多级渐远纹理
-    glGenerateMipmap(GL_TEXTURE_2D);
+    /* 超出范围后如何采样 */
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, static_cast<GLint>(wrap));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, static_cast<GLint>(wrap));
 
-    // 解绑
+    /* 缩放后如何采样 */
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    /* 生成 mipmap */
+    if (mip_map) {
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+
+    /* 解除绑定 */
     glBindTexture(GL_TEXTURE_2D, 0);
 
+    stbi_image_free(data);
+}
+
+std::shared_ptr<Texture2D> TextureManager::texture_load(const std::string &path) {
+    auto iter = _textures.find(path);
+
+    // 使用缓存
+    if (iter != _textures.end())
+        return iter->second;
+
+    auto texture = std::make_shared<Texture2D>(path);
+    _textures.emplace(path, texture);
     return texture;
 }
 
-unsigned char *Texture2D::load_file(const std::string &file_path, int *_width, int *_height, int *_nr_channels) {
-    SPDLOG_INFO("load texture from file: {}", file_path);
-    unsigned char *data = stbi_load(file_path.c_str(), _width, _height, _nr_channels, 0);
-    if (!data) {
-        SPDLOG_ERROR("fail to load texture from file: {}", file_path);
-        throw (std::exception());
+
+std::map<TextureType, std::vector<std::shared_ptr<Texture2D>>>
+TextureManager::textures_get(const aiMaterial& material, const std::string &dir) {
+
+    /* Assimp 和 自定义材质类型的对应表 */
+    static std::map<TextureType, aiTextureType> type_map {
+            {TextureType::diffuse, aiTextureType_DIFFUSE},
+            {TextureType::specular, aiTextureType_SPECULAR},
+            {TextureType::normal, aiTextureType_NORMALS},
+    };
+
+    /* 需要从文件中提取出的 texture 类型 */
+    std::map<TextureType, std::vector<std::shared_ptr<Texture2D>>> textures {
+            {TextureType::diffuse, {}},
+            {TextureType::specular, {}},
+    };
+
+    for (auto &[tex_type, texs] : textures) {
+        aiTextureType ai_tex_type = type_map[tex_type];
+        aiString file_name;
+        std::string full_path;
+        for (unsigned i = 0; i < material.GetTextureCount(ai_tex_type); ++i) {
+            material.GetTexture(ai_tex_type, i, &file_name);
+            full_path = dir + file_name.C_Str();
+            texs.push_back(TextureManager::texture_load(full_path));
+        }
     }
-    return data;
+
+    return textures;
 }
 
-unsigned int Texture2D::hdr_load(const std::string &path) {
-    int width, height, nr_components;
-    unsigned int hdr_texture;
-
-    // 载入文件
-    stbi_set_flip_vertically_on_load(true);
-    float *data = stbi_loadf(path.c_str(), &width, &height, &nr_components, 0);
-    if (!data) {
-        SPDLOG_ERROR("fail to load hdr texture from file: {}", path);
-        throw std::exception();
-    }
-
-    // 创建材质对象
-    hdr_texture = hdr_texture_create(width, height, data);
-
-    stbi_image_free(data);
-    return hdr_texture;
-}
-
-unsigned int Texture2D::hdr_texture_create(int width, int height, float *data) {
-    unsigned int hdr_texture;
-
-    glGenTextures(1, &hdr_texture);
-    glBindTexture(GL_TEXTURE_2D, hdr_texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, data);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    return hdr_texture;
-}
-
-unsigned int Texture2D::cubemap_texture_create(unsigned int width) {
+GLuint TextureCube::cube_map_create(GLsizei width) {
     unsigned int cube_map;
 
     glGenTextures(1, &cube_map);
@@ -116,89 +123,83 @@ unsigned int Texture2D::cubemap_texture_create(unsigned int width) {
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
     return cube_map;
 }
 
-GLuint Texture2D::cubemap_tex_create(const std::vector<std::string> &files) {
-    assert(files.size() == 6);
+TextureCube::TextureCube(const std::string &file_path_positive_x, const std::string &file_path_negative_x,
+                         const std::string &file_path_positive_y, const std::string &file_path_negative_y,
+                         const std::string &file_path_positive_z, const std::string &file_path_negative_z) {
+    std::map<GLenum, std::string> texture_map{
+            {GL_TEXTURE_CUBE_MAP_POSITIVE_X, file_path_positive_x},
+            {GL_TEXTURE_CUBE_MAP_NEGATIVE_X, file_path_negative_x},
+            {GL_TEXTURE_CUBE_MAP_POSITIVE_Y, file_path_positive_y},
+            {GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, file_path_negative_y},
+            {GL_TEXTURE_CUBE_MAP_POSITIVE_Z, file_path_positive_z},
+            {GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, file_path_negative_z},
+    };
 
-    GLuint cubemap;
+    glGenTextures(1, &_id);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, _id);
+
+    /* 读取文件，生成纹理 */
     int width, height, nr_channels;
     unsigned char *data;
-
-    glGenTextures(1, &cubemap);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);
-
-    for (int i = 0; i < 6; ++i) {
-        data = load_file(files[i], &width, &height, &nr_channels);
-        GLuint format = nr_channels == 3 ? GL_RGB : GL_RGBA;
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+    for (const auto&[texure_target, file_path] : texture_map) {
+        data = stbi_load(file_path.c_str(), &width, &height, &nr_channels, 0);
+        if (!data) {
+            throw std::runtime_error(fmt::format("fail to load texture: {}", file_path));
+        }
+        switch (nr_channels) {
+            case 3:
+                glTexImage2D(texure_target, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+                break;
+            case 4:
+                glTexImage2D(texure_target, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+                break;
+            default:
+                throw std::runtime_error("bad nr channels");
+        }
         stbi_image_free(data);
     }
 
     /* 多级纹理 */
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
     /* uv 超过后如何采样 */
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-    return cubemap;
 }
 
-std::map<TextureType, std::vector<std::shared_ptr<Texture2D>>>
-Texture2DBuilder::build(const std::string &dir, const aiMesh &mesh, const aiScene &scene) {
-    std::map<TextureType, std::vector<std::shared_ptr<Texture2D>>> textures;
-
-    // 先判断是否有材质
-    if (mesh.mMaterialIndex < 0) {
-        SPDLOG_INFO("this mesh has no material.");
-        return textures;
+TextureHDR::TextureHDR(const std::string &file_path) {
+    // note 这里进行了垂直翻转
+    stbi_set_flip_vertically_on_load(true);
+    int width, height, nr_channels;
+    // 载入文件
+    float *data = stbi_loadf(file_path.c_str(), &width, &height, &nr_channels, 0);
+    if (!data) {
+        throw std::runtime_error(fmt::format("fail to load hdr texture from file: {}", file_path));
     }
+    stbi_set_flip_vertically_on_load(false);
 
-    aiMaterial *material = scene.mMaterials[mesh.mMaterialIndex];
+    // 创建材质对象
+    glGenTextures(1, &_id);
+    glBindTexture(GL_TEXTURE_2D, _id);
 
-    // diffuse
-    textures.emplace(diffuse, build(dir, *material, aiTextureType_DIFFUSE));
+    /* 将像素写入纹理 */
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, data);
 
-    // specular
-    textures.emplace(specular, build(dir, *material, aiTextureType_SPECULAR));
+    /* 超过 tex_coord 范围后，如何采样 */
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    // normal
-    // textures.emplace(normal, build(dir, *material, aiTextureType_NORMALS));
+    /* 生成 */
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
-    return textures;
-}
-
-std::vector<std::shared_ptr<Texture2D>>
-Texture2DBuilder::build(const std::string &dir, const aiMaterial &mat, aiTextureType type) {
-    std::vector<std::shared_ptr<Texture2D>> textures;
-
-    for (unsigned int i = 0; i < mat.GetTextureCount(type); ++i) {
-        // 取得 texture 的全路径
-        aiString file_name;
-        mat.GetTexture(type, i, &file_name);
-        std::string full_path = dir + file_name.C_Str();
-
-        // 构造 textures
-        auto texture = TextureManager::texture_load(full_path);
-        textures.push_back(texture);
-    }
-
-    return textures;
-}
-
-std::map<std::string, std::shared_ptr<Texture2D>> TextureManager::textures;
-
-std::shared_ptr<Texture2D> TextureManager::texture_load(const std::string &path) {
-    auto iter = textures.find(path);
-
-    // 使用缓存
-    if (iter != textures.end())
-        return iter->second;
-
-    auto texture = std::make_shared<Texture2D>(path);
-    textures.emplace(path, texture);
-    return texture;
+    // 关闭文件
+    stbi_image_free(data);
 }

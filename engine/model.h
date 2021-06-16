@@ -6,51 +6,53 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
 #include <spdlog/spdlog.h>
+#include <assimp/scene.h>
+#include <assimp/Importer.hpp>
+#include <assimp/postprocess.h>
 
-#include "./shader.h"
-#include "./mesh.h"
+#include "mesh.h"
 
 
 /* 一个 Model 由多个 Mesh 组成 */
 class Model {
 public:
-    friend class ModelBuilder;
+    inline Model() : _position{0.f, 0.f, 0.f},
+              _model(glm::one<glm::mat4>()) {}
 
-    Model() = default;
-    explicit Model(const glm::vec3 &pos);
+    inline explicit Model(const glm::vec3 &pos)
+            : _position(pos),
+              _model(glm::translate(glm::one<glm::mat4>(), pos)) {}
 
-    glm::mat4 model_matrix_get();
+    static std::shared_ptr<Model> load_model(const std::string &path);
 
-    std::vector<GLuint> VAOs_get();
+    // =====================================================
+    // 属性
+    // =====================================================
 
+    [[nodiscard]] inline glm::mat4 model() const { return this->_model; }
+
+    [[nodiscard]] inline const std::vector<Mesh> &meshes() const { return _meshes; }
+
+
+    // =====================================================
     // 改变位姿
+    // =====================================================
+
     void move(const glm::vec3 &trans);
+
     void rotate(const glm::vec3 &axis, float angle);
 
-    /**
-     * 绘制 model
-     * 会更新 model 矩阵，设置 texture 等
-     */
-    void draw(const std::shared_ptr<Shader> &shader, GLsizei amount = 1);
+protected:
+    /* 使用 Assimp 读取模型：递归地读取节点及子节点的模型，将结果放入 meshes 中 */
+    static void
+    process_node(std::vector<Mesh> &meshes, const aiNode &node, const aiScene &scene, const std::string &dir_path);
 
 protected:
-    std::vector<Mesh> meshes;
-    glm::mat4 model = glm::one<glm::mat4>();            // model 矩阵
-    glm::vec3 pos{};                          // Model 的位置
-};
 
-
-/* 通过 Assimp 来创建一个 Model 对象 */
-class ModelBuilder {
-public:
-    static std::shared_ptr<Model> build(const std::string &path);
-
-private:
-    static void process_node(Model &model, const aiNode &node, const aiScene &scene, const std::string &dir);
+    std::vector<Mesh> _meshes{};
+    glm::vec3 _position;                // Model 的位置
+    glm::mat4 _model;                   // model 矩阵
 };
 
 #endif //RENDER_MODEL_H

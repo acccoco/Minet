@@ -19,9 +19,10 @@ link_directories(/opt/homebrew/lib)
 ############################################################
 # 第三方库
 ############################################################
-find_package(spdlog REQUIRED)
+find_package(fmt REQUIRED)
 find_package(glm REQUIRED)
 find_package(glfw3 REQUIRED)
+find_package(spdlog REQUIRED)
 find_package(assimp REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(Threads REQUIRED)
@@ -32,93 +33,93 @@ find_library(IOKit_LIB IOKit)
 find_library(CoreVideo_LIB CoreVideo)
 
 # glad
-add_library(GLAD STATIC lib/glad/src/glad.c)
-target_include_directories(GLAD PUBLIC lib/glad/include)
+add_library(LIB_GLAD STATIC lib/glad/src/glad.c)
+target_include_directories(LIB_GLAD PUBLIC lib/glad/include)
 
 # imgui
-add_library(IMGUI STATIC
+add_library(LIB_IMGUI STATIC
         lib/imgui/imgui.cpp
+        lib/imgui/imgui_demo.cpp
         lib/imgui/imgui_draw.cpp
         lib/imgui/imgui_tables.cpp
         lib/imgui/imgui_widgets.cpp
         lib/imgui/backends/imgui_impl_glfw.cpp
-        lib/imgui/backends/imgui_impl_opengl3.cpp
-        lib/imgui/imgui_demo.cpp)
-target_include_directories(IMGUI PUBLIC lib/imgui)
-target_link_libraries(IMGUI GLAD)
+        lib/imgui/backends/imgui_impl_opengl3.cpp)
+target_include_directories(LIB_IMGUI PUBLIC lib/imgui)
+target_link_libraries(LIB_IMGUI LIB_GLAD)
 
 # stb_image 库
-add_library(STBIMAGE STATIC lib/stb_image/src/stb_image.cpp)
-target_include_directories(STBIMAGE PUBLIC lib/stb_image/include)
+add_library(LIB_STBIMAGE STATIC lib/stb_image/src/stb_image.cpp)
+target_include_directories(LIB_STBIMAGE PUBLIC lib/stb_image/include)
 
-
-############################################################
 # 所有的库文件
-############################################################
 set(LIB_LINKS
-        spdlog::spdlog
-        glm::glm
         glfw
-        ${ASSIMP_LIBRARIES}
-        ${OPENGL_LIBRARIES}
+        LIB_GLAD
+        LIB_IMGUI
+        glm::glm
+        fmt::fmt
+        LIB_STBIMAGE
         ${COCOA_LIB}
         ${IOKit_LIB}
+        spdlog::spdlog
         ${CoreVideo_LIB}
         Threads::Threads
-        GLAD
-        IMGUI
-        STBIMAGE
-        )
+        ${ASSIMP_LIBRARIES}
+        ${OPENGL_LIBRARIES})
 
 
 ############################################################
-# 当前项目的源文件
+# render
 ############################################################
 list(APPEND PRJ_SRCS
         engine/src/camera.cpp
-        engine/src/color.cpp
-        engine/src/core.cpp
         engine/src/frame_buffer.cpp
-        engine/src/light.cpp
         engine/src/mesh.cpp
         engine/src/model.cpp
         engine/src/scene.cpp
         engine/src/shader.cpp
         engine/src/texture.cpp
         engine/src/window.cpp
-        engine/utils/src/file.cpp)
+        engine/src/render.cpp)
+
+# 将engine 编译为静态库
+add_library(engine STATIC ${PRJ_SRCS})
+target_link_libraries(engine PUBLIC ${LIB_LINKS})
+target_include_directories(engine PRIVATE ${CMAKE_SOURCE_DIR}/engine)
 
 
 ############################################################
-# 渲染每个场景
+# 渲染每个测试场景
 ############################################################
-set(SCENES
-        scene_box_floor
-        scene_edge_outline
-        scene_face_cull
-        scene_post_process
-        scene_light
-        scene_nano
-        scene_normal_visualize
-        scene_pbr_dl
-        scene_pbr_ibl
-        scene_simple
-        scene_skybox
-        scene_space
-        scene_transparent
-        )
-foreach(scene ${SCENES})
-    add_executable(${scene} ${PRJ_SRCS} "scene/${scene}.cpp")
-    target_link_libraries(${scene} ${LIB_LINKS})
+
+# 注入头文件
+configure_file(${CMAKE_SOURCE_DIR}/config.in ${CMAKE_BINARY_DIR}/config.hpp)
+
+# 场景的定义
+set(scenes
+        box-floor
+        border
+        face-cull
+        light
+        nano-suit
+        normal-visualize
+        post-process
+        simple
+        sky-box
+        transparent
+        instanced-space
+        pbr-direct-light
+        pbr-image-based-light)
+
+foreach (scene ${scenes})
+    add_executable(example-${scene} examples/${scene}/main.cpp)
+    target_link_libraries(example-${scene} engine)
+    target_include_directories(example-${scene} PRIVATE ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 endforeach()
 
 
 # 一般测试
 # =============================================================================
-add_executable(test test.cpp)
-target_link_libraries(test spdlog::spdlog)
-
-
-# 单元用例
-# =============================================================================
-add_executable(test_delegate engine/test/test_delegate.cpp)
+add_executable(test-1 test.cpp)
+target_link_libraries(test-1 spdlog::spdlog)

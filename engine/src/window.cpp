@@ -1,116 +1,42 @@
-#include "../window.h"
-#include "../utils/common.h"
+#include "window.h"
 
 
-Window *g_window = nullptr;
-double Window::mouse_x;
-double Window::mouse_y;
-std::vector<KeyboardEvent> Window::key_events;
-std::vector<MouseButtonEvent> Window::mouse_button_events;
-bool Window::mouse_init = false;
-
-int Window::width = 1600;
-int Window::height = 1200;
-
-GLFWwindow *Window::window = nullptr;
-
-
-void Window::use() {
-    glfwMakeContextCurrent(Window::window);
+void Window::_mouse_pos_cbk(GLFWwindow *, double x, double y) {
+    _mouse_cur_x = x;
+    _mouse_cur_y = y;
 }
 
-void Window::mouse_pos_cbk(GLFWwindow *_window, double x, double y) {
-    // 更新鼠标位置到全局
-    mouse_x = x;
-    mouse_y = y;
-
-    // 鼠标的值已经可以使用了
-    mouse_init = true;
+void Window::_check_keyboard_event() {
+    _key_events.clear();
+    for (auto[glfw_key, key_event]: KEY_MAP) {
+        if (glfwGetKey(_window, glfw_key) == GLFW_PRESS)
+            _key_events.push_back(key_event);
+    }
 }
 
-bool Window::need_close() {
-    return glfwWindowShouldClose(Window::window);
+void Window::_close_window_check() {
+    if (std::find(_key_events.begin(), _key_events.end(), KeyboardEvent::press_Esc) == _key_events.end())
+        return;
+    glfwSetWindowShouldClose(_window, true);
 }
 
-void Window::update() {
+void Window::_mouse_buttion_cbk(GLFWwindow *, int button, int action, int mods) {
 
-    keyboard_events_check();
-    close_window_check();
+    /* 如果当前按键不在关注列表里面，就不管 */
+    auto button_iter = MOUSE_BUTTON_MAP.find(button);
+    if (button_iter == MOUSE_BUTTON_MAP.end())
+        return;
+
+    /* 如果在关注关心的鼠标按键里面，就添加相应的事件 */
+    if (action == GLFW_PRESS) {
+        _mouse_button_events[button_iter->second] = ButtonEvent::Press;
+    } else if (action == GLFW_RELEASE) {
+        _mouse_button_events[button_iter->second] = ButtonEvent::Release;
+    }
 }
 
-void Window::frame_buffer_cbk(GLFWwindow *_window, int _width, int _height) {
-    width = _width;
-    height = _height;
+void Window::_frame_buffer_size_cbk(GLFWwindow *, int width, int height) {
+    _width = width;
+    _height = height;
     glViewport(0, 0, width, height);
-}
-
-Window::Window() noexcept {
-    assert(width > 0 && height > 0);
-    SPDLOG_INFO("create window ({:d}, {:d})", width, height);
-
-    // 创建窗口
-    Window::window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
-    if (window == nullptr) {
-        SPDLOG_ERROR("fail to create window.");
-        glfwTerminate();
-        exit(-1);
-    }
-}
-
-void Window::close_window_check() {
-    if (std::find(key_events.begin(), key_events.end(), KeyboardEvent::press_Esc) != key_events.end()) {
-        SPDLOG_INFO("check ESC is pressed, window will be closed");
-        glfwSetWindowShouldClose(window, true);
-    }
-}
-
-void Window::init() {
-    g_window = new Window();
-
-    // 注册回调函数
-    glfwSetCursorPosCallback(window, mouse_pos_cbk);
-    glfwSetFramebufferSizeCallback(window, frame_buffer_cbk);
-    glfwSetMouseButtonCallback(window, mouse_button_cbk);
-
-    // 捕捉光标
-    //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-}
-
-void Window::mouse_button_cbk(GLFWwindow *_window, int button, int action, int mods) {
-    static std::map<int, MouseButtonEvent> press_map{
-            {GLFW_MOUSE_BUTTON_LEFT,  MouseButtonEvent::press_Left},
-            {GLFW_MOUSE_BUTTON_RIGHT, MouseButtonEvent::press_Right},
-    };
-
-    for (auto const &iter : press_map) {
-        if (button == iter.first) {
-            auto event_iter = std::find(mouse_button_events.begin(), mouse_button_events.end(), iter.second);
-            if (event_iter == mouse_button_events.end() && action == GLFW_PRESS)
-                mouse_button_events.push_back(iter.second);
-            if (event_iter != mouse_button_events.end() && action == GLFW_RELEASE)
-                mouse_button_events.erase(event_iter);
-            break;
-        }
-    }
-}
-
-void Window::keyboard_events_check() {
-    // GLFW 的按键和自定义键盘事件的对应表
-    static std::map<int, KeyboardEvent> keyboard_event_map{
-            {GLFW_KEY_W,        KeyboardEvent::press_W},
-            {GLFW_KEY_A,        KeyboardEvent::press_A},
-            {GLFW_KEY_S,        KeyboardEvent::press_S},
-            {GLFW_KEY_D,        KeyboardEvent::press_D},
-            {GLFW_KEY_Q,        KeyboardEvent::press_Q},
-            {GLFW_KEY_E,        KeyboardEvent::press_E},
-            {GLFW_KEY_ESCAPE,   KeyboardEvent::press_Esc},
-            {GLFW_KEY_LEFT_ALT, KeyboardEvent::press_LAlt},
-    };
-
-    // 查表，将 GLFW 的键盘封装为自定义的事件类型
-    key_events.clear();
-    for (const auto &iter : keyboard_event_map) {
-        if (glfwGetKey(window, iter.first) == GLFW_PRESS)
-            key_events.push_back(iter.second);
-    }
 }

@@ -1,0 +1,45 @@
+/**
+ * 配置信息
+ */
+
+#ifndef RENDER_CONFIG_IN
+#define RENDER_CONFIG_IN
+
+#include <string>
+#include <fmt/format.h>
+
+// 路径的配置
+// ============================================================================
+
+const std::string ROOT_DIR = "${CMAKE_SOURCE_DIR}";
+
+inline std::string ROOT(const std::string &name) {
+    return fmt::format("{}/{}", ROOT_DIR, name);
+}
+
+const std::string ASSETS_DIR = "${CMAKE_SOURCE_DIR}/assets";
+
+inline std::string ASSETS(const std::string &name) {
+    return fmt::format("{}/{}", ASSETS_DIR, name);
+}
+
+const std::string EXAMPLE_DIR = "${CMAKE_SOURCE_DIR}/examples";
+
+inline std::string EXAMPLE(const std::string &name) {
+    return fmt::format("{}/{}", EXAMPLE_DIR, name);
+}
+
+const std::string TEXTURE_DIR = "${CMAKE_SOURCE_DIR}/assets/texture";
+
+inline std::string TEXTURE(const std::string &name) {
+    return fmt::format("{}/{}", TEXTURE_DIR, name);
+}
+
+const std::string MODEL_DIR = "${CMAKE_SOURCE_DIR}/assets/model";
+
+inline std::string MODEL(const std::string &name) {
+    return fmt::format("{}/{}", MODEL_DIR, name);
+}
+
+
+#endif //RENDER_CONFIG_IN

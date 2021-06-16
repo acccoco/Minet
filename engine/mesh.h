@@ -8,179 +8,133 @@
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
-#include <assimp/Importer.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <assimp/scene.h>
+#include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 
-#include "./utils/with.h"
-#include "./shader.h"
-#include "./texture.h"
+#include "texture.h"
+#include "utils/with.h"
 
 
 /* 顶点：坐标，法线，纹理坐标 */
 class Vertex {
 public:
-    glm::vec3 positon{};
-    glm::vec3 normal{};
-    glm::vec2 texcoord = glm::vec2(0.f, 0.f);
+    glm::vec3 positon{0.f, 0.f, 0.f};
+    glm::vec3 normal{0.f, 0.f, 0.f};
+    glm::vec2 texcoord{0.f, 0.f};
 
-    Vertex() = default;
-};
+    /* 通过 Assimp 来创建顶点对象 */
+    static inline Vertex vertex_gen(const aiVector3D &pos, const aiVector3D &norm) {
+        return Vertex{{pos.x,  pos.y,  pos.z},
+                      {norm.x, norm.y, norm.z}};
+    }
 
-
-/* 通过 Assimp 来创建 Vertex 对象 */
-class VertexBuilder {
-public:
-    static Vertex build(const aiVector3t<float> &pos, const aiVector3t<float> &norm);
-
-    static Vertex build(const aiVector3t<float> &pos, const aiVector3t<float> &norm, const aiVector3t<float> &uv);
-
-private:
-    /* 仅初始化 postition 和 normal */
-    static void part_init(Vertex &vertex, const aiVector3t<float> &pos, const aiVector3t<float> &norm);
+    /* 通过 Assimp 来创建顶点对象 */
+    static inline Vertex vertex_gen(const aiVector3D &pos, const aiVector3D &norm, const aiVector3D &uv) {
+        return Vertex{{pos.x,  pos.y,  pos.z},
+                      {norm.x, norm.y, norm.z},
+                      {uv.x,   uv.y}};
+    }
 };
 
 
 /* 面（顶点索引）*/
 class Face {
 public:
-    unsigned int a;
-    unsigned int b;
-    unsigned int c;
-
-    Face() = default;
+    unsigned int a{0};
+    unsigned int b{0};
+    unsigned int c{0};
 
     Face(unsigned int a, unsigned int b, unsigned int c) : a(a), b(b), c(c) {}
+
+    /* 通过 Assimp 来创建面 */
+    static inline Face face_gen(const aiFace &face) {
+        assert(face.mNumIndices == 3);
+        return Face(face.mIndices[0], face.mIndices[1], face.mIndices[2]);
+    }
 };
 
 
-/* 通过 Assimp 来创建 Face 对象 */
-class FaceBuilder {
-public:
-    static Face build(const aiFace &face);
+/* Mesh 的类型，顶点是以 Array 形式组织起来的，还是需要 EBO 去索引 */
+enum class MeshType {
+    Array,
+    Elements,
 };
 
 
 /* 模型：由顶点，面，纹理组成 */
-class Mesh {
+class Mesh : With {
 public:
-    std::vector<Vertex> vertices;
-    std::vector<Face> faces;
-    std::map<TextureType, std::vector<std::shared_ptr<Texture2D>>> textures;
+    // =====================================================
+    // 创建 Mesh 的方法
+    // =====================================================
 
-    Mesh() = default;
-
+    /* 通过顶点数组，面数组的方式来创建 Mesh，创建的 Mesh 是 Elements 类型的 */
     Mesh(std::vector<Vertex> vertices, std::vector<Face> &faces,
-         std::map<TextureType, std::vector<std::shared_ptr<Texture2D>>> textures);
-
-    GLuint VAO_get() const;
-
-    /* 初始化 Mesh 的各种几何属性，如 VAO，VBO */
-    void geometry_init();
-
-    /* 通过 shader，将该 mesh 绘制出来 */
-    void draw(const std::shared_ptr<Shader> &shader, GLsizei amount = 1);
-
-private:
-    GLuint VAO{}, VBO{}, EBO{};
+         std::map<TextureType, std::vector<std::shared_ptr<Texture2D>>> textures,
+         const glm::vec3 &position = {0.f, 0.f, 0.f});
 
     /**
-     * 将特定类型的 texture 传递给 shader
-     * @param unit 纹理单元开始的编号
+     * 通过顶点数组来创建 mesh
+     * @param vertices 顶点的 position，normal，tex_coord 都放在一个数组里面
+     * @param position_component 顶点 position 分量有几个元素
+     * @param normal_component 顶点 normal 分量有几个元素
+     * @param tex_component 顶点 tex_coord 分量有几个元素
      */
-    void texture_transmit(const std::shared_ptr<Shader> &shader, TextureType type, GLuint &unit);
-};
+    explicit Mesh(const std::vector<float> &vertices, const glm::vec3 &position = {0.f, 0.f, 0.f},
+                  int position_component = 3, int normal_component = 3, int tex_component = 2);
+
+    // 通过 Assimp 来创建 Mesh 对象
+    static Mesh mesh_load(const aiMesh &mesh, const aiScene &scene, const std::string &dir);
 
 
-class PNTMesh : public With {
-public:
-    unsigned int vertex_cnt{};
-    GLuint VAO{};
+    // =====================================================
+    // 属性
+    // =====================================================
 
-    explicit PNTMesh(const std::vector<float> &vertices);
-
-    void in() override;
-
-    void out() override;
-
-    void draw() const;
-};
+    [[nodiscard]] inline GLsizei face_cnt() const { return _face_cnt; }
 
 
-template<unsigned int A, unsigned int B = 0, unsigned int C = 0>
-class MeshT : public With {
-public:
-    unsigned int vertex_cnt{};
-    GLuint VAO{};
+    [[nodiscard]] inline GLuint VAO() const { return _vao; }
 
-    explicit MeshT(const std::vector<float> &vertices) {
-        assert(A != 0);
-        unsigned int strip = A + B + C;
-        assert(vertices.size() % strip == 0);
+    [[nodiscard]] inline const glm::mat4 &model() const { return _model_matrix; };
 
-        vertex_cnt = vertices.size() / strip;
+    inline void set_model(const glm::mat4 &model) { _model_matrix = model; }
 
-        glGenVertexArrays(1, &VAO);
-        glBindVertexArray(VAO);
-
-        GLuint VBO;
-        glGenBuffers(1, &VBO);
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
-        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices[0], GL_STATIC_DRAW);
-
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, A, GL_FLOAT, GL_FALSE, strip * sizeof(float), (void *) (0 * sizeof(float)));
-        if (B != 0) {
-            glEnableVertexAttribArray(1);
-            glVertexAttribPointer(1, B, GL_FLOAT, GL_FALSE, strip * sizeof(float), (void *) (A * sizeof(float)));
-        }
-        if (C != 0) {
-            glEnableVertexAttribArray(2);
-            glVertexAttribPointer(2, C, GL_FLOAT, GL_FALSE, strip * sizeof(float), (void *) ((A + B) * sizeof(float)));
-        }
-
-        glBindVertexArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    inline void set_position(const glm::vec3 &position) {
+        _model_matrix = glm::translate(glm::one<glm::mat4>(), position);
     }
 
-    void in() override {
-        glBindVertexArray(VAO);
+    /* 向 Mesh 添加 texture */
+    inline void add_texture(TextureType texture_type, const std::shared_ptr<Texture2D> &texture) {
+        _textures[texture_type].push_back(texture);
     }
 
-    void out() override {
-        glBindVertexArray(0);
+    /* 查找 Mesh 的指定类型的 Texture */
+    [[nodiscard]] inline std::vector<std::shared_ptr<Texture2D>> textures(TextureType texture_type) const {
+        auto iter = _textures.find(texture_type);
+        return iter == _textures.end()
+               ? std::vector<std::shared_ptr<Texture2D>>()
+               : iter->second;
     }
 
-    void draw() {
-        glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, vertex_cnt);
-        glBindVertexArray(0);
-    }
+
+    inline void in() override { glBindVertexArray(_vao); }
+
+    inline void out() override { glBindVertexArray(0); }
+
+    /* 绘制 Mesh，并不绑定 shader */
+    void draw(GLsizei amount = 1) const;
+
+private:
+    GLuint _vao{0};
+    MeshType _type;
+    GLsizei _face_cnt{0};
+    std::map<TextureType, std::vector<std::shared_ptr<Texture2D>>> _textures;
+    glm::mat4 _model_matrix = glm::one<glm::mat4>();
+
 };
 
-
-/* 二维模型，只有 pos 和 uv */
-class PT2Mesh : public With {
-public:
-
-    unsigned int vertex_cnt{};
-    GLuint VAO{};
-
-    explicit PT2Mesh(const std::vector<float> &vertices);
-
-    void in() override;
-
-    void out() override;
-
-    void draw() const;
-};
-
-
-/* 通过 Assimp 来构建一个 Mesh */
-class MeshBuilder {
-public:
-    static Mesh build(const aiMesh &mesh, const aiScene &scene, const std::string &dir);
-};
 
 #endif //RENDER_MESH_H

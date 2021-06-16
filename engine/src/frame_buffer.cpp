@@ -1,6 +1,6 @@
 #include <exception>
 #include <spdlog/spdlog.h>
-#include "../frame_buffer.h"
+#include "frame_buffer.h"
 
 
 FrameBuffer::FrameBuffer(unsigned int width, unsigned int height)
@@ -50,10 +50,6 @@ FrameBuffer::FrameBuffer(unsigned int width, unsigned int height)
         throw std::exception();
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-void FrameBuffer::use() const {
-    glBindFramebuffer(GL_FRAMEBUFFER, this->frame_buffer);
 }
 
 GLuint FrameBuffer::color_tex_get() const {
