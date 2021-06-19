@@ -117,9 +117,3 @@ foreach (scene ${scenes})
     target_link_libraries(example-${scene} engine)
     target_include_directories(example-${scene} PRIVATE ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 endforeach()
-
-
-# 一般测试
-# =============================================================================
-add_executable(test-1 test.cpp)
-target_link_libraries(test-1 spdlog::spdlog)
