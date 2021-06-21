@@ -30,8 +30,9 @@ std::shared_ptr<Model> Model::load_model(const std::string &path) {
 
     SPDLOG_INFO("load model by using Assimp, path: {}", path);
 
-    /* 读取模型，将所有面都处理为三角面，并翻转 UV */
-    const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+    /* 读取模型，将所有面都处理为三角面，并翻转 UV，如果没有法线，就生成法线 */
+    const aiScene *scene = importer.ReadFile(path,
+                                             aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals);
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
         SPDLOG_ERROR("error on load model: {}", importer.GetErrorString());
         return model;

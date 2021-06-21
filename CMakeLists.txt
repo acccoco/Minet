@@ -117,3 +117,11 @@ foreach (scene ${scenes})
     target_link_libraries(example-${scene} engine)
     target_include_directories(example-${scene} PRIVATE ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 endforeach()
+
+
+############################################################
+# 光线追踪调试器
+############################################################
+add_executable(debugger debugger/main.cpp)
+target_link_libraries(debugger engine)
+target_include_directories(debugger PRIVATE ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})

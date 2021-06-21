@@ -108,10 +108,8 @@ public:
      */
     inline void draw(const Mesh &mesh, const std::function<void(Shader &, const Mesh &)> &func = nullptr) {
         glUseProgram(id);
-        if (func == nullptr)
-            _method_draw_mesh(*this, mesh);
-        else
-            func(*this, mesh);
+        const auto &draw_func = (func == nullptr) ? _method_draw_mesh : func;
+        draw_func(*this, mesh);
         mesh.draw();
     }
 
@@ -207,14 +205,27 @@ public:
         _template_method_draw_mesh = func;
     }
 
+    void set_drawT(const std::function<void(Shader &, const Model &, const Mesh &, const T &)> &func) {
+        _template_method_draw_model = func;
+    }
+
     void draw_t(const Mesh &mesh, const T &t) {
         glUseProgram(id);
         _template_method_draw_mesh(*this, mesh, t);
         mesh.draw();
     }
 
+    void draw_t(const Model &model, const T &t) {
+        glUseProgram(id);
+        for (const auto &mesh : model.meshes()) {
+            _template_method_draw_model(*this, model, mesh, t);
+            mesh.draw();
+        }
+    }
+
 private:
     std::function<void(Shader &, const Mesh &, const T &)> _template_method_draw_mesh;
+    std::function<void(Shader &, const Model &, const Mesh &, const T &)> _template_method_draw_model;
 };
 
 #endif //RENDER_SHADER_H

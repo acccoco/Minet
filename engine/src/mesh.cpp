@@ -6,8 +6,8 @@
 Mesh::Mesh(std::vector<Vertex> vertices, std::vector<Face> &faces,
            std::map<TextureType, std::vector<std::shared_ptr<Texture2D>>> textures,
            const glm::vec3 &position) :
-        _type(MeshType::Elements),
-        _face_cnt((GLsizei) faces.size()),
+        _type(MeshType::TriangleElement),
+        _primitive_cnt((GLsizei) faces.size()),
         _textures(std::move(textures)) {
 
     /* 设置 mesh 的位置 */
@@ -58,12 +58,15 @@ Mesh Mesh::mesh_load(const aiMesh &mesh, const aiScene &scene, const std::string
 
     // 处理顶点
     for (unsigned int i = 0; i < mesh.mNumVertices; ++i) {
-        // 一个顶点可以有多组纹理坐标，这里只需要第一组
-        if (mesh.mTextureCoords[0]) {
-            vertices.push_back(Vertex::vertex_gen(mesh.mVertices[i], mesh.mNormals[i], mesh.mTextureCoords[0][i]));
-        } else {
-            vertices.push_back(Vertex::vertex_gen(mesh.mVertices[i], mesh.mNormals[i]));
-        }
+        aiVector3D positon = mesh.mVertices[i];
+        aiVector3D norm, uv;
+        /* 一个顶点可以有多组纹理坐标，这里只需要第一组 */
+        if (mesh.mTextureCoords[0])
+            uv = mesh.mTextureCoords[0][i];
+        if (mesh.mNormals)
+            norm = mesh.mNormals[i];
+
+        vertices.push_back(Vertex::vertex_gen(positon, norm, uv));
     }
 
     // 处理面
@@ -85,7 +88,7 @@ Mesh Mesh::mesh_load(const aiMesh &mesh, const aiScene &scene, const std::string
 
 Mesh::Mesh(const std::vector<float> &vertices, const glm::vec3 &position,
            int position_component, int normal_component, int tex_component)
-        : _type(MeshType::Array) {
+        : _type(MeshType::TriangleArray) {
 
     /* 设置模型的位置 */
     _model_matrix = glm::translate(glm::one<glm::mat4>(), position);
@@ -94,7 +97,7 @@ Mesh::Mesh(const std::vector<float> &vertices, const glm::vec3 &position,
     const int all_component = position_component + normal_component + tex_component;
     assert(all_component > 0);
     assert(vertices.size() % (all_component * 3) == 0);
-    _face_cnt = GLsizei(vertices.size() / all_component / 3);
+    _primitive_cnt = GLsizei(vertices.size() / all_component / 3);
 
     /* VAO */
     glGenVertexArrays(1, &_vao);
@@ -129,21 +132,46 @@ Mesh::Mesh(const std::vector<float> &vertices, const glm::vec3 &position,
 }
 
 void Mesh::draw(GLsizei amount) const {
-    assert(_face_cnt != 0);
+    assert(_primitive_cnt != 0);
     glBindVertexArray(this->_vao);
     switch (_type) {
-        case MeshType::Elements:
+        case MeshType::TriangleElement:
             if (amount == 1)
-                glDrawElements(GL_TRIANGLES, _face_cnt * 3, GL_UNSIGNED_INT, nullptr);
+                glDrawElements(GL_TRIANGLES, _primitive_cnt * 3, GL_UNSIGNED_INT, nullptr);
             else
-                glDrawElementsInstanced(GL_TRIANGLES, _face_cnt * 3, GL_UNSIGNED_INT, nullptr, amount);
+                glDrawElementsInstanced(GL_TRIANGLES, _primitive_cnt * 3, GL_UNSIGNED_INT, nullptr, amount);
             break;
-        case MeshType::Array:
-            glDrawArrays(GL_TRIANGLES, 0, _face_cnt * 3);
+        case MeshType::TriangleArray:
+            glDrawArrays(GL_TRIANGLES, 0, _primitive_cnt * 3);
+            break;
+        case MeshType::Line:
+            glDrawArrays(GL_LINES, 0, _primitive_cnt * 2);
             break;
         default:
             throw std::runtime_error("never");
     }
     glBindVertexArray(0);
+}
+
+Mesh::Mesh(const std::vector<Line> &lines)
+        : _type(MeshType::Line), _primitive_cnt(lines.size()) {
+
+    /* VAO */
+    glGenVertexArrays(1, &_vao);
+    glBindVertexArray(_vao);
+
+    /* VBO */
+    GLuint vbo;
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, lines.size() * sizeof(Line), &lines[0], GL_STATIC_DRAW);
+
+    /* 设置顶点属性 */
+    glEnableVertexAttribArray(VertAttribLocation::position);
+    glVertexAttribPointer(VertAttribLocation::position, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+
+    /* 取消绑定 */
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 

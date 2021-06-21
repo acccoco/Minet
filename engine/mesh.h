@@ -56,10 +56,21 @@ public:
 };
 
 
-/* Mesh 的类型，顶点是以 Array 形式组织起来的，还是需要 EBO 去索引 */
+/* 线段 */
+class Line {
+public:
+    Line(const glm::vec3 a, const glm::vec3 b) : _a(a), _b(b) {}
+
+private:
+    glm::vec3 _a, _b;
+};
+
+
+/* Mesh 的类型，图元的类型 */
 enum class MeshType {
-    Array,
-    Elements,
+    TriangleArray,          /* 面的顶点是以 array 的形式组织起来的 */
+    TriangleElement,        /* 面具有 ebo 索引 */
+    Line,                   /* 图元是线段 */
 };
 
 
@@ -85,6 +96,10 @@ public:
     explicit Mesh(const std::vector<float> &vertices, const glm::vec3 &position = {0.f, 0.f, 0.f},
                   int position_component = 3, int normal_component = 3, int tex_component = 2);
 
+    /* 创建由线段组成的模型 */
+    explicit Mesh(const std::vector<Line> &lines);
+
+
     // 通过 Assimp 来创建 Mesh 对象
     static Mesh mesh_load(const aiMesh &mesh, const aiScene &scene, const std::string &dir);
 
@@ -93,8 +108,8 @@ public:
     // 属性
     // =====================================================
 
-    [[nodiscard]] inline GLsizei face_cnt() const { return _face_cnt; }
-
+    /* 图元的数量 */
+    [[nodiscard]] inline GLsizei primitive_cnt() const { return _primitive_cnt; }
 
     [[nodiscard]] inline GLuint VAO() const { return _vao; }
 
@@ -130,7 +145,7 @@ public:
 private:
     GLuint _vao{0};
     MeshType _type;
-    GLsizei _face_cnt{0};
+    GLsizei _primitive_cnt{0};
     std::map<TextureType, std::vector<std::shared_ptr<Texture2D>>> _textures;
     glm::mat4 _model_matrix = glm::one<glm::mat4>();
 

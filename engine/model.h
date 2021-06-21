@@ -18,7 +18,7 @@
 class Model {
 public:
     inline Model() : _position{0.f, 0.f, 0.f},
-              _model(glm::one<glm::mat4>()) {}
+                     _model(glm::one<glm::mat4>()) {}
 
     inline explicit Model(const glm::vec3 &pos)
             : _position(pos),
@@ -31,6 +31,8 @@ public:
     // =====================================================
 
     [[nodiscard]] inline glm::mat4 model() const { return this->_model; }
+
+    inline void set_model(const glm::mat4 &model) { _model = model; }
 
     [[nodiscard]] inline const std::vector<Mesh> &meshes() const { return _meshes; }
 
