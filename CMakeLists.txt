@@ -26,8 +26,9 @@ find_package(spdlog REQUIRED)
 find_package(assimp REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(Threads REQUIRED)
+find_package(SQLite3 REQUIRED)
 
-# imgui 依赖的库
+# imgui 依赖的库 (on MacOS)
 find_library(COCOA_LIB Cocoa)
 find_library(IOKit_LIB IOKit)
 find_library(CoreVideo_LIB CoreVideo)
@@ -118,10 +119,17 @@ foreach (scene ${scenes})
     target_include_directories(example-${scene} PRIVATE ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 endforeach()
 
-
 ############################################################
 # 光线追踪调试器
 ############################################################
-add_executable(debugger debugger/main.cpp)
-target_link_libraries(debugger engine)
+set(DBG_DIR "${CMAKE_SOURCE_DIR}/debugger")
+
+# 数据库的路径
+set(DB_PATH "${CMAKE_SOURCE_DIR}/../render-debug/render.sqlite3")
+
+# 注入头文件
+configure_file(${DBG_DIR}/debugger_config.in ${DBG_DIR}/debugger_config.h)
+
+add_executable(debugger ${DBG_DIR}/main.cpp)
+target_link_libraries(debugger engine SQLite::SQLite3)
 target_include_directories(debugger PRIVATE ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
