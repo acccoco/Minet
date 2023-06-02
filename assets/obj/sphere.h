@@ -35,9 +35,9 @@ public:
 
         // 生成顶点，北极和南极有很多个顶点，可以视为一个圆柱的侧面
         for (int i = 0; i <= y_slice; ++i) {
-            float theta = M_PI * i / y_slice;
+            float theta = glm::pi<float>() * i / y_slice;
             for (int j = 0; j <= x_slice; ++j) {
-                float phi = 2 * M_PI * j / x_slice;
+                float phi = 2 * glm::pi<float>() * j / x_slice;
 
                 float x = std::sin(theta) * std::cos(phi);
                 float y = std::cos(theta);
