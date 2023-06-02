@@ -28,10 +28,12 @@ find_package(OpenGL REQUIRED)
 find_package(Threads REQUIRED)
 find_package(SQLite3 REQUIRED)
 
-# imgui 依赖的库 (on MacOS)
-find_library(COCOA_LIB Cocoa)
-find_library(IOKit_LIB IOKit)
-find_library(CoreVideo_LIB CoreVideo)
+if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
+    # imgui 依赖的库 (on MacOS)
+    find_library(COCOA_LIB Cocoa)
+    find_library(IOKit_LIB IOKit)
+    find_library(CoreVideo_LIB CoreVideo)
+endif ()
 
 # glad
 add_library(LIB_GLAD STATIC lib/glad/src/glad.c)
@@ -47,7 +49,7 @@ add_library(LIB_IMGUI STATIC
         lib/imgui/backends/imgui_impl_glfw.cpp
         lib/imgui/backends/imgui_impl_opengl3.cpp)
 target_include_directories(LIB_IMGUI PUBLIC lib/imgui)
-target_link_libraries(LIB_IMGUI LIB_GLAD)
+target_link_libraries(LIB_IMGUI LIB_GLAD glfw)
 
 # stb_image 库
 add_library(LIB_STBIMAGE STATIC lib/stb_image/src/stb_image.cpp)
@@ -61,14 +63,17 @@ set(LIB_LINKS
         glm::glm
         fmt::fmt
         LIB_STBIMAGE
-        ${COCOA_LIB}
-        ${IOKit_LIB}
         spdlog::spdlog
-        ${CoreVideo_LIB}
         Threads::Threads
         ${ASSIMP_LIBRARIES}
         ${OPENGL_LIBRARIES})
 
+if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
+    list(APPEND LIG_LINKS
+            ${COCOA_LIB}
+            ${IOKit_LIB}
+            ${CoreVideo_LIB})
+endif ()
 
 ############################################################
 # render
@@ -117,7 +122,7 @@ foreach (scene ${scenes})
     add_executable(example-${scene} examples/${scene}/main.cpp)
     target_link_libraries(example-${scene} engine)
     target_include_directories(example-${scene} PRIVATE ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
-endforeach()
+endforeach ()
 
 ############################################################
 # 光线追踪调试器
